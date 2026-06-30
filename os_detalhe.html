@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detalhe da Obra — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .cabecalho-os { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 14px; margin: 18px 0; }
+    .info-card { padding: 14px; border-radius: 8px; }
+    .info-card .label { font-size: 0.78rem; opacity: 0.7; display:block; }
+    .info-card .valor { font-size: 1.1rem; font-weight: 600; }
+
+    .acoes-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+    select, input, textarea, button { padding: 8px; border-radius: 6px; }
+
+    .timeline { list-style: none; padding: 0; margin: 12px 0; }
+    .timeline li {
+      padding: 10px 14px; border-left: 3px solid var(--accent, #e0a83b);
+      margin-bottom: 8px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.03);
+      font-size: 0.88rem;
+    }
+    .timeline .meta { opacity: 0.65; font-size: 0.78rem; }
+
+    table.tabela-intervencoes { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    table.tabela-intervencoes th, table.tabela-intervencoes td {
+      padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border, #444); font-size: 0.88rem;
+    }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal-overlay.aberto { display: flex; }
+    .modal-box {
+      background: var(--bg-card, #1c1f26); padding: 24px; border-radius: 10px;
+      width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-box label { display: block; margin-top: 12px; font-size: 0.85rem; }
+    .modal-box input, .modal-box select, .modal-box textarea { width: 100%; margin-top: 4px; }
+    .modal-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .checklist { max-height: 140px; overflow-y: auto; border: 1px solid var(--border,#444); border-radius: 6px; padding: 8px; margin-top: 4px; }
+    .checklist label { display: flex; align-items: center; gap: 6px; font-weight: normal; margin: 4px 0; }
+    .checklist input[type=checkbox] { width: auto; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container">
+    <div class="cabecalho-os">
+      <h1 id="titulo-os">Obra —</h1>
+      <a href="ordens.html" class="btn-secundario">← Voltar à lista</a>
+    </div>
+
+    <div class="info-grid" id="info-grid">
+      <div class="info-card"><span class="label">Equipamento</span><span class="valor" id="info-equip">—</span></div>
+      <div class="info-card"><span class="label">Categoria</span><span class="valor" id="info-categoria">—</span></div>
+      <div class="info-card"><span class="label">Abertura</span><span class="valor" id="info-abertura">—</span></div>
+      <div class="info-card"><span class="label">Fecho</span><span class="valor" id="info-fecho">—</span></div>
+      <div class="info-card"><span class="label">Estado Físico</span><span class="valor" id="info-fisico">—</span></div>
+      <div class="info-card"><span class="label">Workflow</span><span class="valor" id="info-workflow">—</span></div>
+    </div>
+
+    <div class="acoes-row">
+      <select id="sel-novo-status">
+        <option value="Aberta">Aberta</option>
+        <option value="Supervisão">Supervisão</option>
+        <option value="Chefe da Oficina">Chefe da Oficina</option>
+        <option value="Departamento Técnico">Departamento Técnico</option>
+        <option value="CdM">CdM</option>
+        <option value="Fechada">Fechada</option>
+      </select>
+      <input type="text" id="responsavel-mudanca" placeholder="Responsável pela mudança" />
+      <button class="btn-primary" id="btn-mudar-status">Atualizar Workflow</button>
+
+      <select id="sel-status-fisico">
+        <option value="Em Reparação">Em Reparação</option>
+        <option value="Aguarda Peças">Aguarda Peças</option>
+        <option value="Disponível">Disponível</option>
+      </select>
+      <button class="btn-secundario" id="btn-mudar-fisico">Atualizar Estado Físico</button>
+    </div>
+
+    <h3>Histórico do Workflow</h3>
+    <ul class="timeline" id="lista-timeline">
+      <li>A carregar...</li>
+    </ul>
+
+    <div class="acoes-row" style="margin-top:28px">
+      <h3 style="margin-right:auto">Intervenções</h3>
+      <button class="btn-primary" id="btn-nova-intervencao">+ Registar Intervenção</button>
+    </div>
+    <table class="tabela-intervencoes">
+      <thead>
+        <tr>
+          <th>Data/Turno</th>
+          <th>Início</th>
+          <th>Fim</th>
+          <th>Horas</th>
+          <th>Descrição</th>
+          <th>Técnicos</th>
+          <th>Continua</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-intervencoes">
+        <tr><td colspan="7">A carregar...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <!-- Modal Nova Intervenção -->
+  <div class="modal-overlay" id="modal-intervencao">
+    <div class="modal-box">
+      <h3>Registar Intervenção</h3>
+      <form id="form-intervencao">
+        <label>Turno
+          <select id="i-turno" required></select>
+        </label>
+        <label>Hora Início
+          <input type="time" id="i-inicio" required />
+        </label>
+        <label>Hora Fim
+          <input type="time" id="i-fim" required />
+        </label>
+        <label>Descrição
+          <textarea id="i-descricao" rows="3" required></textarea>
+        </label>
+        <label>Estado
+          <select id="i-status">
+            <option value="em_curso">Em curso</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="i-continua" style="width:auto;display:inline-block;margin-right:6px" /> Continua noutro turno</label>
+        <label>Técnicos envolvidos
+          <div class="checklist" id="i-tecnicos-lista"></div>
+        </label>
+        <div class="modal-acoes">
+          <button type="button" class="btn-secundario" id="btn-cancelar-intervencao">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const osId = params.get('id');
+    let osAtual = null;
+    let equipAtual = null;
+
+    if (!osId) {
+      alert('Obra não especificada.');
+      window.location.href = 'ordens.html';
+    }
+
+    async function carregarOS() {
+      const lista = await db.query('ordens_servico', { select: '*', eq: { id: osId } });
+      osAtual = Array.isArray(lista) ? lista[0] : lista;
+      if (!osAtual) {
+        alert('Obra não encontrada.');
+        window.location.href = 'ordens.html';
+        return;
+      }
+
+      const eqLista = await db.query('equipment', { select: '*', eq: { id: osAtual.equipment_id } });
+      equipAtual = Array.isArray(eqLista) ? eqLista[0] : eqLista;
+
+      document.getElementById('titulo-os').textContent = `Obra ${osAtual.numero_obra}`;
+      document.getElementById('info-equip').textContent = equipAtual ? equipAtual.code : '—';
+      document.getElementById('info-categoria').textContent = equipAtual ? (equipAtual.fleet_type || '—') : '—';
+      document.getElementById('info-abertura').textContent = formatarData ? formatarData(osAtual.data_abertura) : osAtual.data_abertura;
+      document.getElementById('info-fecho').textContent = osAtual.data_fecho ? (formatarData ? formatarData(osAtual.data_fecho) : osAtual.data_fecho) : '—';
+      document.getElementById('info-fisico').textContent = osAtual.status_fisico;
+      document.getElementById('info-workflow').textContent = osAtual.status_atual;
+
+      document.getElementById('sel-novo-status').value = osAtual.status_atual;
+      document.getElementById('sel-status-fisico').value = osAtual.status_fisico;
+    }
+
+    async function carregarTimeline() {
+      const log = await db.query('os_status_log', { select: '*', eq: { os_id: osId } });
+      const ordenado = [...log].sort((a, b) => new Date(b.data_mudanca) - new Date(a.data_mudanca));
+      const lista = document.getElementById('lista-timeline');
+      if (ordenado.length === 0) {
+        lista.innerHTML = '<li>Sem registos.</li>';
+        return;
+      }
+      lista.innerHTML = ordenado
+        .map(
+          (ev) => `
+        <li>
+          <strong>${ev.status_anterior ? ev.status_anterior + ' → ' : ''}${ev.status_novo}</strong>
+          ${ev.observacao ? '— ' + ev.observacao : ''}
+          <div class="meta">${ev.responsavel ? ev.responsavel + ' · ' : ''}${new Date(ev.data_mudanca).toLocaleString('pt-PT')}</div>
+        </li>`
+        )
+        .join('');
+    }
+
+    let collaboradoresAtivos = [];
+
+    async function carregarTecnicosCheckbox() {
+      collaboradoresAtivos = await db.query('collaborators', {
+        select: 'id,name,setor',
+        eq: { active: true },
+      });
+      const div = document.getElementById('i-tecnicos-lista');
+      div.innerHTML = collaboradoresAtivos
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((c) => `
+          <label><input type="checkbox" value="${c.id}" /> ${c.name}${c.setor ? ' — ' + c.setor : ''}</label>
+        `)
+        .join('');
+    }
+
+    async function carregarTurnos() {
+      const turnos = await db.query('shifts', { select: '*' });
+      const sel = document.getElementById('i-turno');
+      sel.innerHTML = turnos
+        .sort((a, b) => new Date(b.shift_date) - new Date(a.shift_date))
+        .slice(0, 30)
+        .map((t) => `<option value="${t.id}">${t.shift_date} — ${t.shift_type} (${t.supervisor})</option>`)
+        .join('');
+    }
+
+    async function carregarIntervencoes() {
+      const records = await db.query('records', { select: '*', eq: { os_id: osId } });
+      const relacoes = await db.query('record_collaborators', { select: '*' });
+      const tbody = document.getElementById('tbody-intervencoes');
+
+      if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">Ainda sem intervenções registadas.</td></tr>';
+        return;
+      }
+
+      const turnos = await db.query('shifts', { select: '*' });
+      const mapaTurnos = {};
+      turnos.forEach((t) => (mapaTurnos[t.id] = t));
+
+      tbody.innerHTML = records
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .map((r) => {
+          const turno = mapaTurnos[r.shift_id];
+          const idsColabs = relacoes.filter((rc) => rc.record_id === r.id).map((rc) => rc.collaborator_id);
+          const nomes = idsColabs
+            .map((id) => {
+              const c = collaboradoresAtivos.find((x) => x.id === id);
+              return c ? c.name : '—';
+            })
+            .join(', ');
+
+          return `
+          <tr>
+            <td>${turno ? turno.shift_date + ' / ' + turno.shift_type : '—'}</td>
+            <td>${r.time_start}</td>
+            <td>${r.time_end}</td>
+            <td>${r.hours ?? '—'}</td>
+            <td>${r.description || '—'}</td>
+            <td>${nomes || '—'}</td>
+            <td>${r.continues ? 'Sim' : 'Não'}</td>
+          </tr>`;
+        })
+        .join('');
+    }
+
+    document.getElementById('btn-mudar-status').addEventListener('click', async () => {
+      const novoStatus = document.getElementById('sel-novo-status').value;
+      const responsavel = document.getElementById('responsavel-mudanca').value.trim();
+
+      if (novoStatus === osAtual.status_atual) {
+        alert('O estado selecionado já é o estado atual desta obra.');
+        return;
+      }
+
+      const updatePayload = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
+      if (novoStatus === 'Fechada') {
+        updatePayload.data_fecho = new Date().toISOString().slice(0, 10);
+      }
+
+      await db.update('ordens_servico', osId, updatePayload);
+      await db.insert('os_status_log', {
+        os_id: osId,
+        status_anterior: osAtual.status_atual,
+        status_novo: novoStatus,
+        responsavel: responsavel || null,
+      });
+
+      await carregarOS();
+      await carregarTimeline();
+      document.getElementById('responsavel-mudanca').value = '';
+    });
+
+    document.getElementById('btn-mudar-fisico').addEventListener('click', async () => {
+      const novoFisico = document.getElementById('sel-status-fisico').value;
+      await db.update('ordens_servico', osId, { status_fisico: novoFisico, atualizado_em: new Date().toISOString() });
+      await carregarOS();
+    });
+
+    const modalIntervencao = document.getElementById('modal-intervencao');
+    document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
+      modalIntervencao.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-intervencao').addEventListener('click', () => {
+      modalIntervencao.classList.remove('aberto');
+    });
+
+    document.getElementById('form-intervencao').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+
+      const inicio = document.getElementById('i-inicio').value;
+      const fim = document.getElementById('i-fim').value;
+      const [h1, m1] = inicio.split(':').map(Number);
+      const [h2, m2] = fim.split(':').map(Number);
+      let horas = (h2 + m2 / 60) - (h1 + m1 / 60);
+      if (horas < 0) horas += 24;
+
+      const payload = {
+        shift_id: document.getElementById('i-turno').value,
+        equipment_id: osAtual.equipment_id,
+        os_id: osId,
+        status: document.getElementById('i-status').value,
+        time_start: inicio,
+        time_end: fim,
+        hours: Math.round(horas * 100) / 100,
+        description: document.getElementById('i-descricao').value.trim(),
+        continues: document.getElementById('i-continua').checked,
+      };
+
+      try {
+        const novoRecord = await db.insert('records', payload);
+        const recordId = Array.isArray(novoRecord) ? novoRecord[0].id : novoRecord.id;
+
+        const tecnicosSelecionados = Array.from(
+          document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]:checked')
+        ).map((el) => el.value);
+
+        for (const colaboradorId of tecnicosSelecionados) {
+          await db.insert('record_collaborators', {
+            record_id: recordId,
+            collaborator_id: colaboradorId,
+          });
+        }
+
+        modalIntervencao.classList.remove('aberto');
+        document.getElementById('form-intervencao').reset();
+        await carregarIntervencoes();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao guardar a intervenção. Tente novamente.');
+      }
+    });
+
+    (async function init() {
+      await carregarOS();
+      await carregarTimeline();
+      await carregarTecnicosCheckbox();
+      await carregarTurnos();
+      await carregarIntervencoes();
+    })();
+  </script>
+</body>
+</html>

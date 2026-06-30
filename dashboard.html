@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .kpi-card {
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .kpi-card .valor {
+      font-size: 2.2rem;
+      font-weight: 700;
+      display: block;
+      margin-top: 6px;
+    }
+    .kpi-card.reparacao { border-left: 4px solid #e0a83b; }
+    .kpi-card.pecas { border-left: 4px solid #d9534f; }
+    .kpi-card.disponivel { border-left: 4px solid #4caf7d; }
+
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin: 24px 0;
+    }
+    .workflow-card {
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .workflow-card .valor {
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: block;
+    }
+    .secao-titulo { margin-top: 32px; margin-bottom: 8px; }
+    table.tabela-os { width: 100%; border-collapse: collapse; }
+    table.tabela-os th, table.tabela-os td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border, #444);
+      font-size: 0.92rem;
+    }
+    .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; }
+    .badge-reparacao { background: #e0a83b33; color: #e0a83b; }
+    .badge-pecas { background: #d9534f33; color: #d9534f; }
+    .badge-disponivel { background: #4caf7d33; color: #4caf7d; }
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container">
+    <h1>Dashboard — Oficina</h1>
+    <p class="subtitulo">Estado atual das máquinas e ordens de serviço</p>
+
+    <div class="kpi-grid">
+      <div class="kpi-card reparacao">
+        <span class="label">Em Reparação</span>
+        <span class="valor" id="kpi-reparacao">—</span>
+      </div>
+      <div class="kpi-card pecas">
+        <span class="label">Aguarda Peças</span>
+        <span class="valor" id="kpi-pecas">—</span>
+      </div>
+      <div class="kpi-card disponivel">
+        <span class="label">Disponível</span>
+        <span class="valor" id="kpi-disponivel">—</span>
+      </div>
+    </div>
+
+    <h3 class="secao-titulo">Obras por estado do workflow</h3>
+    <div class="workflow-grid" id="workflow-grid">
+      <p>A carregar...</p>
+    </div>
+
+    <h3 class="secao-titulo">Ordens de Serviço abertas</h3>
+    <table class="tabela-os">
+      <thead>
+        <tr>
+          <th>Nº Obra</th>
+          <th>Equipamento</th>
+          <th>Abertura</th>
+          <th>Estado Físico</th>
+          <th>Workflow</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-obras-abertas">
+        <tr><td colspan="5">A carregar...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    const ESTADOS_WORKFLOW = ['Aberta', 'Supervisão', 'Chefe da Oficina', 'Departamento Técnico', 'CdM', 'Fechada'];
+
+    async function carregarDashboard() {
+      try {
+        const ordens = await db.query('ordens_servico', {
+          select: 'id,numero_obra,data_abertura,status_atual,status_fisico,equipment_id',
+        });
+
+        const equipamentos = await db.query('equipment', { select: 'id,code,name' });
+        const mapaEquip = {};
+        equipamentos.forEach((e) => (mapaEquip[e.id] = e.code || e.name));
+
+        // KPIs de estado físico (apenas obras NÃO fechadas)
+        const abertas = ordens.filter((o) => o.status_atual !== 'Fechada');
+        const contagemFisico = { 'Em Reparação': 0, 'Aguarda Peças': 0, Disponível: 0 };
+        abertas.forEach((o) => {
+          if (contagemFisico[o.status_fisico] !== undefined) contagemFisico[o.status_fisico]++;
+        });
+
+        document.getElementById('kpi-reparacao').textContent = contagemFisico['Em Reparação'];
+        document.getElementById('kpi-pecas').textContent = contagemFisico['Aguarda Peças'];
+        document.getElementById('kpi-disponivel').textContent = contagemFisico['Disponível'];
+
+        // Contagem por estado de workflow
+        const contagemWorkflow = {};
+        ESTADOS_WORKFLOW.forEach((e) => (contagemWorkflow[e] = 0));
+        ordens.forEach((o) => {
+          if (contagemWorkflow[o.status_atual] !== undefined) contagemWorkflow[o.status_atual]++;
+        });
+
+        const wfGrid = document.getElementById('workflow-grid');
+        wfGrid.innerHTML = ESTADOS_WORKFLOW.map(
+          (estado) => `
+          <div class="workflow-card">
+            <span class="label">${estado}</span>
+            <span class="valor">${contagemWorkflow[estado]}</span>
+          </div>`
+        ).join('');
+
+        // Tabela de obras abertas
+        const tbody = document.getElementById('tbody-obras-abertas');
+        if (abertas.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">Sem obras abertas no momento.</td></tr>';
+        } else {
+          tbody.innerHTML = abertas
+            .sort((a, b) => new Date(b.data_abertura) - new Date(a.data_abertura))
+            .map((o) => {
+              const badgeClasse =
+                o.status_fisico === 'Em Reparação'
+                  ? 'badge-reparacao'
+                  : o.status_fisico === 'Aguarda Peças'
+                  ? 'badge-pecas'
+                  : 'badge-disponivel';
+              return `
+              <tr onclick="window.location.href='os_detalhe.html?id=${o.id}'" style="cursor:pointer">
+                <td>${o.numero_obra}</td>
+                <td>${mapaEquip[o.equipment_id] || '—'}</td>
+                <td>${formatarData ? formatarData(o.data_abertura) : o.data_abertura}</td>
+                <td><span class="badge ${badgeClasse}">${o.status_fisico}</span></td>
+                <td>${o.status_atual}</td>
+              </tr>`;
+            })
+            .join('');
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err);
+        document.getElementById('tbody-obras-abertas').innerHTML =
+          '<tr><td colspan="5">Erro ao carregar dados.</td></tr>';
+      }
+    }
+
+    carregarDashboard();
+  </script>
+</body>
+</html>
