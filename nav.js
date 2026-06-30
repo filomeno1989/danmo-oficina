@@ -10,6 +10,7 @@ function renderNavbarOficina(paginaActiva) {
     { id: 'dashboard',     label: 'Dashboard',      href: 'dashboard.html' },
     { id: 'ordens',        label: 'Ordens de Serviço', href: 'ordens.html' },
     { id: 'equipamentos',  label: 'Equipamentos',   href: 'equipamentos.html' },
+    { id: 'config',        label: 'Config',         href: 'config.html' },
   ];
 
   nav.innerHTML = `
