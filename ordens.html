@@ -6,109 +6,110 @@
   <title>Ordens de Serviço — Danmo Oficina</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 16px 0; }
-    .toolbar select, .toolbar input { padding: 8px; border-radius: 6px; }
-    table.tabela-os { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    table.tabela-os th, table.tabela-os td {
-      padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border, #444);
-      font-size: 0.92rem;
-    }
-    table.tabela-os tbody tr { cursor: pointer; }
-    table.tabela-os tbody tr:hover { background: rgba(255,255,255,0.04); }
-    .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; }
-    .badge-reparacao { background: #e0a83b33; color: #e0a83b; }
-    .badge-pecas { background: #d9534f33; color: #d9534f; }
-    .badge-disponivel { background: #4caf7d33; color: #4caf7d; }
-
     .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      align-items: center; justify-content: center; z-index: 100;
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center; z-index: 200;
     }
     .modal-overlay.aberto { display: flex; }
     .modal-box {
-      background: var(--bg-card, #1c1f26); padding: 24px; border-radius: 10px;
-      width: 100%; max-width: 420px;
+      background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; width: 100%; max-width: 440px; box-shadow: var(--shadow);
+      max-height: 90vh; overflow-y: auto;
     }
-    .modal-box label { display: block; margin-top: 12px; font-size: 0.85rem; }
-    .modal-box input, .modal-box select, .modal-box textarea {
-      width: 100%; padding: 8px; border-radius: 6px; margin-top: 4px;
-    }
-    .modal-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
   </style>
 </head>
 <body>
-  <div id="nav-container"></div>
+  <div id="navbar" class="navbar"></div>
 
-  <main class="container">
-    <div class="toolbar">
-      <h1 style="margin-right:auto">Ordens de Serviço</h1>
-      <button class="btn-primary" id="btn-nova-os">+ Nova Obra</button>
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0">Ordens de Serviço</h1>
+      <button class="btn btn-primary" id="btn-nova-os">+ Nova Obra</button>
+    </div>
+    <p class="page-sub">Acompanhamento de obras abertas e fechadas</p>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Estado do Workflow</label>
+          <select id="filtro-status">
+            <option value="">Todos os estados</option>
+            <option value="Aberta">Aberta</option>
+            <option value="Supervisão">Supervisão</option>
+            <option value="Chefe da Oficina">Chefe da Oficina</option>
+            <option value="Departamento Técnico">Departamento Técnico</option>
+            <option value="CdM">CdM</option>
+            <option value="Fechada">Fechada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Equipamento</label>
+          <select id="filtro-equipamento"><option value="">Todos os equipamentos</option></select>
+        </div>
+        <div class="form-group">
+          <label>Buscar nº obra</label>
+          <input type="text" id="filtro-busca" placeholder="Ex: 68012" />
+        </div>
+      </div>
     </div>
 
-    <div class="toolbar">
-      <select id="filtro-status">
-        <option value="">Todos os estados</option>
-        <option value="Aberta">Aberta</option>
-        <option value="Supervisão">Supervisão</option>
-        <option value="Chefe da Oficina">Chefe da Oficina</option>
-        <option value="Departamento Técnico">Departamento Técnico</option>
-        <option value="CdM">CdM</option>
-        <option value="Fechada">Fechada</option>
-      </select>
-      <select id="filtro-equipamento">
-        <option value="">Todos os equipamentos</option>
-      </select>
-      <input type="text" id="filtro-busca" placeholder="Buscar nº obra..." />
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nº Obra</th>
+              <th>Equipamento</th>
+              <th>Categoria</th>
+              <th>Abertura</th>
+              <th>Fecho</th>
+              <th>Estado Físico</th>
+              <th>Workflow</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-os">
+            <tr><td colspan="7">A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <table class="tabela-os">
-      <thead>
-        <tr>
-          <th>Nº Obra</th>
-          <th>Equipamento</th>
-          <th>Categoria</th>
-          <th>Abertura</th>
-          <th>Fecho</th>
-          <th>Estado Físico</th>
-          <th>Workflow</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-os">
-        <tr><td colspan="7">A carregar...</td></tr>
-      </tbody>
-    </table>
   </main>
 
-  <!-- Modal Nova OS -->
   <div class="modal-overlay" id="modal-nova-os">
     <div class="modal-box">
-      <h3>Nova Ordem de Serviço</h3>
+      <div class="card-title">Nova Ordem de Serviço</div>
       <form id="form-nova-os">
-        <label>Nº Obra (fornecido pela CdM)
+        <div class="form-group mt-16">
+          <label>Nº Obra (fornecido pela CdM)</label>
           <input type="text" id="f-numero-obra" required />
-        </label>
-        <label>Equipamento
+        </div>
+        <div class="form-group mt-16">
+          <label>Equipamento</label>
           <select id="f-equipamento" required></select>
-        </label>
-        <label>Data de Abertura
+        </div>
+        <div class="form-group mt-16">
+          <label>Data de Abertura</label>
           <input type="date" id="f-data-abertura" required />
-        </label>
-        <label>Estado Físico
+        </div>
+        <div class="form-group mt-16">
+          <label>Estado Físico</label>
           <select id="f-status-fisico">
             <option value="Em Reparação">Em Reparação</option>
             <option value="Aguarda Peças">Aguarda Peças</option>
             <option value="Disponível">Disponível</option>
           </select>
-        </label>
-        <label>Aberto por
+        </div>
+        <div class="form-group mt-16">
+          <label>Aberto por</label>
           <input type="text" id="f-aberto-por" />
-        </label>
-        <label>Observações
+        </div>
+        <div class="form-group mt-16">
+          <label>Observações</label>
           <textarea id="f-observacoes" rows="2"></textarea>
-        </label>
-        <div class="modal-acoes">
-          <button type="button" class="btn-secundario" id="btn-cancelar-os">Cancelar</button>
-          <button type="submit" class="btn-primary">Criar Obra</button>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-os">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar Obra</button>
         </div>
       </form>
     </div>
@@ -120,32 +121,32 @@
   <script src="tema.js"></script>
   <script src="nav.js"></script>
   <script>
+    renderNavbarOficina('ordens');
+
+    function badgeFisico(estado) {
+      if (estado === 'Em Reparação') return 'badge-amber';
+      if (estado === 'Aguarda Peças') return 'badge-red';
+      return 'badge-green';
+    }
+
     let todasOrdens = [];
     let mapaEquip = {};
-    let equipamentosLista = [];
 
     async function carregarEquipamentos() {
-      equipamentosLista = await db.query('equipment', {
-        select: 'id,code,name,fleet_type,active',
-        eq: { active: true },
-      });
-      equipamentosLista.forEach((e) => (mapaEquip[e.id] = e));
+      const equipamentos = await db.query('equipment', 'select=*&active=eq.true&order=code.asc');
+      equipamentos.forEach((e) => (mapaEquip[e.id] = e));
 
       const selFiltro = document.getElementById('filtro-equipamento');
       const selForm = document.getElementById('f-equipamento');
-      equipamentosLista
-        .sort((a, b) => (a.code || '').localeCompare(b.code || ''))
-        .forEach((e) => {
-          const label = `${e.code} — ${e.fleet_type || e.name || ''}`;
-          selFiltro.insertAdjacentHTML('beforeend', `<option value="${e.id}">${label}</option>`);
-          selForm.insertAdjacentHTML('beforeend', `<option value="${e.id}">${label}</option>`);
-        });
+      equipamentos.forEach((e) => {
+        const label = `${e.code} — ${e.fleet_type || e.name || ''}`;
+        selFiltro.insertAdjacentHTML('beforeend', `<option value="${e.id}">${label}</option>`);
+        selForm.insertAdjacentHTML('beforeend', `<option value="${e.id}">${label}</option>`);
+      });
     }
 
     async function carregarOrdens() {
-      todasOrdens = await db.query('ordens_servico', {
-        select: 'id,numero_obra,equipment_id,data_abertura,data_fecho,status_atual,status_fisico',
-      });
+      todasOrdens = await db.query('ordens_servico', 'select=*');
       renderizarTabela();
     }
 
@@ -170,20 +171,14 @@
       tbody.innerHTML = lista
         .map((o) => {
           const eq = mapaEquip[o.equipment_id] || {};
-          const badgeClasse =
-            o.status_fisico === 'Em Reparação'
-              ? 'badge-reparacao'
-              : o.status_fisico === 'Aguarda Peças'
-              ? 'badge-pecas'
-              : 'badge-disponivel';
           return `
-          <tr onclick="window.location.href='os_detalhe.html?id=${o.id}'">
+          <tr style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">
             <td>${o.numero_obra}</td>
             <td>${eq.code || '—'}</td>
             <td>${eq.fleet_type || '—'}</td>
-            <td>${formatarData ? formatarData(o.data_abertura) : o.data_abertura}</td>
-            <td>${o.data_fecho ? (formatarData ? formatarData(o.data_fecho) : o.data_fecho) : '—'}</td>
-            <td><span class="badge ${badgeClasse}">${o.status_fisico}</span></td>
+            <td>${formatarData(o.data_abertura)}</td>
+            <td>${o.data_fecho ? formatarData(o.data_fecho) : '—'}</td>
+            <td><span class="badge ${badgeFisico(o.status_fisico)}">${o.status_fisico}</span></td>
             <td>${o.status_atual}</td>
           </tr>`;
         })
@@ -194,15 +189,12 @@
     document.getElementById('filtro-equipamento').addEventListener('change', renderizarTabela);
     document.getElementById('filtro-busca').addEventListener('input', renderizarTabela);
 
-    // Modal
     const modal = document.getElementById('modal-nova-os');
     document.getElementById('btn-nova-os').addEventListener('click', () => {
-      document.getElementById('f-data-abertura').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('f-data-abertura').value = dataHoje();
       modal.classList.add('aberto');
     });
-    document.getElementById('btn-cancelar-os').addEventListener('click', () => {
-      modal.classList.remove('aberto');
-    });
+    document.getElementById('btn-cancelar-os').addEventListener('click', () => modal.classList.remove('aberto'));
 
     document.getElementById('form-nova-os').addEventListener('submit', async (ev) => {
       ev.preventDefault();
@@ -218,7 +210,8 @@
 
       try {
         const nova = await db.insert('ordens_servico', payload);
-        // Regista também o primeiro evento no histórico
+        if (nova && nova.code) throw new Error(nova.message || 'Erro ao criar obra');
+
         const novaId = Array.isArray(nova) ? nova[0].id : nova.id;
         await db.insert('os_status_log', {
           os_id: novaId,
@@ -230,11 +223,12 @@
 
         modal.classList.remove('aberto');
         document.getElementById('form-nova-os').reset();
+        mostrarToast ? mostrarToast('Obra criada com sucesso') : null;
         await carregarOrdens();
       } catch (err) {
         console.error(err);
-        if (String(err.message || err).includes('duplicate') || String(err.message || err).includes('unique')) {
-          alert('Este número de obra já foi usado para este equipamento. Verifique o número junto da CdM.');
+        if (String(err.message || err).toLowerCase().includes('duplicate') || String(err.message || err).includes('uq_equipamento_numero_obra')) {
+          alert('Este número de obra já foi usado para este equipamento. Confirme o número junto da CdM.');
         } else {
           alert('Erro ao criar a obra. Verifique os dados e tente novamente.');
         }

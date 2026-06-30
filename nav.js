@@ -1,49 +1,35 @@
 // nav.js — Danmo Oficina
-// Injeção dinâmica da barra de navegação, seguindo o mesmo padrão do danmo-rh.
-// Inclui este ficheiro em todas as páginas com: <script src="nav.js"></script>
+// Usa exatamente as classes definidas em style.css (.navbar, .navbar-brand,
+// .navbar-menu, .navbar-user) — o mesmo padrão visual dos outros módulos Danmo.
 
-(function () {
-  const paginaAtual = window.location.pathname.split('/').pop() || 'index.html';
+function renderNavbarOficina(paginaActiva) {
+  const nav = document.getElementById('navbar');
+  if (!nav) return;
 
-  const links = [
-    { href: 'dashboard.html', label: 'Dashboard' },
-    { href: 'ordens.html', label: 'Ordens de Serviço' },
-    { href: 'equipamentos.html', label: 'Equipamentos' },
+  const paginas = [
+    { id: 'dashboard',     label: 'Dashboard',      href: 'dashboard.html' },
+    { id: 'ordens',        label: 'Ordens de Serviço', href: 'ordens.html' },
+    { id: 'equipamentos',  label: 'Equipamentos',   href: 'equipamentos.html' },
   ];
 
-  const navHtml = `
-    <nav class="navbar">
-      <div class="navbar-brand">
-        <span class="navbar-logo">Danmo</span>
-        <span class="navbar-modulo">Oficina</span>
-      </div>
-      <div class="navbar-links">
-        ${links
-          .map(
-            (l) => `
-          <a href="${l.href}" class="navbar-link ${l.href === paginaAtual ? 'active' : ''}">
-            ${l.label}
-          </a>`
-          )
-          .join('')}
-      </div>
-      <div class="navbar-actions">
-        <button id="btn-tema" class="btn-icon" title="Mudar tema">🌓</button>
-      </div>
-    </nav>
+  nav.innerHTML = `
+    <a href="dashboard.html" class="navbar-brand">
+      <span class="logo-box">DM</span>
+      <span>
+        <div class="brand-name">Danmo</div>
+        <div class="brand-sub">Oficina</div>
+      </span>
+    </a>
+    <div class="navbar-menu">
+      ${paginas
+        .map(
+          (p) => `<a href="${p.href}" class="${paginaActiva === p.id ? 'active' : ''}">${p.label}</a>`
+        )
+        .join('')}
+      <button id="btn-tema-header" onclick="togglePainelTemas()">🎨</button>
+    </div>
+    <div class="navbar-user">
+      <span>Oficina</span>
+    </div>
   `;
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const alvo = document.getElementById('nav-container');
-    if (alvo) {
-      alvo.innerHTML = navHtml;
-    } else {
-      document.body.insertAdjacentHTML('afterbegin', navHtml);
-    }
-
-    const btnTema = document.getElementById('btn-tema');
-    if (btnTema && typeof alternarTema === 'function') {
-      btnTema.addEventListener('click', alternarTema);
-    }
-  });
-})();
+}
