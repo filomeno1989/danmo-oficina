@@ -44,14 +44,14 @@
       <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">—</div></div>
       <div class="kpi-card amber"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:18px">—</div></div>
-      <div class="kpi-card blue"><div class="kpi-label">Workflow</div><div class="kpi-value" id="info-workflow" style="font-size:18px">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Estado do Processo</div><div class="kpi-value" id="info-workflow" style="font-size:18px">—</div></div>
     </div>
 
     <div class="card">
       <div class="card-title">Atualizar Estado</div>
       <div class="form-grid">
         <div class="form-group">
-          <label>Novo estado do Workflow</label>
+          <label>Novo Estado do Processo</label>
           <select id="sel-novo-status">
             <option value="Aberta">Aberta</option>
             <option value="Supervisão">Supervisão</option>
@@ -66,16 +66,18 @@
           <input type="text" id="responsavel-mudanca" placeholder="Nome" />
         </div>
         <div class="form-group" style="align-self:flex-end">
-          <button class="btn btn-primary" id="btn-mudar-status">Atualizar Workflow</button>
+          <button class="btn btn-primary" id="btn-mudar-status">Atualizar Estado do Processo</button>
         </div>
       </div>
       <div class="form-grid mt-16">
         <div class="form-group">
           <label>Estado Físico da Máquina</label>
           <select id="sel-status-fisico">
-            <option value="Em Reparação">Em Reparação</option>
-            <option value="Aguarda Peças">Aguarda Peças</option>
-            <option value="Disponível">Disponível</option>
+            <option value="Avariada">Avariada</option>
+            <option value="Acidentada">Acidentada</option>
+            <option value="Pneumático">Pneumático</option>
+            <option value="Revisão/Manutenção">Revisão/Manutenção</option>
+            <option value="Inspeção">Inspeção</option>
           </select>
         </div>
         <div class="form-group" style="align-self:flex-end">
@@ -85,7 +87,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Histórico do Workflow</div>
+      <div class="card-title">Histórico do Estado do Processo</div>
       <ul class="timeline" id="lista-timeline"><li>A carregar...</li></ul>
     </div>
 
@@ -98,17 +100,16 @@
         <table>
           <thead>
             <tr>
-              <th>Turno</th>
+              <th>Colaborador</th>
               <th>Início</th>
               <th>Fim</th>
               <th>Horas</th>
               <th>Descrição</th>
-              <th>Técnicos</th>
-              <th>Continua</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody id="tbody-intervencoes">
-            <tr><td colspan="7">A carregar...</td></tr>
+            <tr><td colspan="6">A carregar...</td></tr>
           </tbody>
         </table>
       </div>
@@ -120,8 +121,8 @@
       <div class="card-title">Registar Intervenção</div>
       <form id="form-intervencao">
         <div class="form-group mt-16">
-          <label>Turno</label>
-          <select id="i-turno" required></select>
+          <label>Colaborador</label>
+          <select id="i-colaborador" required></select>
         </div>
         <div class="form-group mt-16">
           <label>Hora Início</label>
@@ -141,13 +142,6 @@
             <option value="em_curso">Em curso</option>
             <option value="concluida">Concluída</option>
           </select>
-        </div>
-        <div class="form-group mt-16">
-          <label><input type="checkbox" id="i-continua" style="width:auto;display:inline-block;margin-right:6px" /> Continua noutro turno</label>
-        </div>
-        <div class="form-group mt-16">
-          <label>Técnicos envolvidos</label>
-          <div class="checklist" id="i-tecnicos-lista"></div>
         </div>
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-intervencao">Cancelar</button>
