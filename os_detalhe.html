@@ -11,12 +11,17 @@
     .timeline .meta { color:var(--text2); font-size:12px; margin-top:2px; }
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
     .modal-overlay.aberto { display:flex; }
-    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:500px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
-    .checklist { max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; padding:8px; }
+    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
+    .checklist { max-height:180px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; padding:8px; }
     .checklist label { display:flex; align-items:center; gap:8px; font-weight:normal; text-transform:none; margin:4px 0; color:var(--text); cursor:pointer; }
     .checklist input[type=checkbox] { width:auto; }
-    .avaria-box { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:12px; font-size:14px; }
-    .avaria-box .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .info-box { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:12px; font-size:14px; }
+    .info-box .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .tipo-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:6px; margin-top:8px; }
+    .tipo-grid label { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; text-transform:none; cursor:pointer; color:var(--text); }
+    .tipo-grid input[type=checkbox] { width:auto; }
+    .chips-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .chip { background:rgba(245,158,11,0.15); color:var(--amber); border-radius:20px; padding:2px 10px; font-size:12px; }
   </style>
 </head>
 <body>
@@ -27,22 +32,34 @@
       <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
     </div>
 
+    <!-- KPIs -->
     <div class="kpi-grid mt-24">
       <div class="kpi-card"><div class="kpi-label">Equipamento</div><div class="kpi-value" id="info-equip" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Categoria</div><div class="kpi-value" id="info-categoria" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:16px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Horímetro</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
       <div class="kpi-card blue"><div class="kpi-label">Workflow</div><div class="kpi-value" id="info-workflow" style="font-size:16px">—</div></div>
     </div>
 
+    <!-- Info da OS -->
     <div class="card">
-      <div class="avaria-box">
+      <div class="info-box">
         <div class="label">Avaria / Motivo de entrada</div>
         <div id="info-avaria">—</div>
       </div>
+      <div class="info-box">
+        <div class="label">Estado Físico</div>
+        <div id="info-fisico">—</div>
+      </div>
+      <div id="info-tipo-wrap" style="display:none">
+        <div class="info-box">
+          <div class="label">Tipo de Intervenção</div>
+          <div class="chips-wrap" id="info-tipo-chips"></div>
+        </div>
+      </div>
       <div id="info-observacoes-wrap" style="display:none">
-        <div class="avaria-box">
+        <div class="info-box">
           <div class="label">Observações</div>
           <div id="info-observacoes">—</div>
         </div>
@@ -57,7 +74,7 @@
           <label>Novo estado do Workflow</label>
           <select id="sel-novo-status">
             <option value="Aberta">Aberta</option>
-            <option value="Supervisão">Supervisão</option>
+            <option value="Em Supervisão">Em Supervisão</option>
             <option value="Chefe da Oficina">Chefe da Oficina</option>
             <option value="Departamento Técnico">Departamento Técnico</option>
             <option value="CdM">CdM</option>
@@ -66,9 +83,7 @@
         </div>
         <div class="form-group">
           <label>Responsável</label>
-          <select id="responsavel-mudanca">
-            <option value="">— Selecionar —</option>
-          </select>
+          <select id="responsavel-mudanca"><option value="">— Selecionar —</option></select>
         </div>
         <div class="form-group" style="align-self:flex-end">
           <button class="btn btn-primary" id="btn-mudar-status">Atualizar Workflow</button>
@@ -76,7 +91,7 @@
       </div>
       <div class="form-grid mt-16">
         <div class="form-group">
-          <label>Estado Físico da Máquina</label>
+          <label>Estado Físico</label>
           <select id="sel-status-fisico">
             <option value="Avariada">Avariada</option>
             <option value="Acidentada">Acidentada</option>
@@ -106,7 +121,7 @@
     <!-- Intervenções -->
     <div class="card">
       <div class="flex-between">
-        <div class="card-title" style="margin-bottom:0">Intervenções</div>
+        <div class="card-title" style="margin-bottom:0">Descrição da Mão de Obra</div>
         <button class="btn btn-primary btn-sm" id="btn-nova-intervencao">+ Registar Intervenção</button>
       </div>
       <div class="table-wrap mt-16">
@@ -115,6 +130,28 @@
             <tr><th>Data</th><th>Início</th><th>Fim</th><th>Horas</th><th>Descrição</th><th>Técnicos</th><th>Estado</th><th></th></tr>
           </thead>
           <tbody id="tbody-intervencoes"><tr><td colspan="8">A carregar...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="kpi-grid mt-16">
+        <div class="kpi-card green">
+          <div class="kpi-label">Total Horas Mão de Obra</div>
+          <div class="kpi-value" id="total-horas">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Peças Aplicadas -->
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-title" style="margin-bottom:0">Peças Aplicadas</div>
+        <button class="btn btn-primary btn-sm" id="btn-nova-peca">+ Adicionar Peça</button>
+      </div>
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr><th>Peça</th><th>Data</th><th>Qtd</th><th>Colaborador</th><th></th></tr>
+          </thead>
+          <tbody id="tbody-pecas"><tr><td colspan="5">Sem peças registadas.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -126,7 +163,7 @@
       <div class="card-title">Registar Intervenção</div>
       <form id="form-intervencao">
         <div class="form-group mt-16">
-          <label>Data da Intervenção *</label>
+          <label>Data *</label>
           <input type="date" id="i-data" required />
         </div>
         <div class="form-grid mt-16">
@@ -141,7 +178,7 @@
         </div>
         <div class="form-group mt-16">
           <label>Descrição do Trabalho *</label>
-          <textarea id="i-descricao" rows="3" required placeholder="O que foi feito, que avaria foi tratada..."></textarea>
+          <textarea id="i-descricao" rows="3" required placeholder="O que foi feito..."></textarea>
         </div>
         <div class="form-group mt-16">
           <label>Estado</label>
@@ -151,11 +188,43 @@
           </select>
         </div>
         <div class="form-group mt-16">
-          <label>Técnicos envolvidos</label>
+          <label>Técnicos Envolvidos</label>
           <div class="checklist" id="i-tecnicos-lista"></div>
         </div>
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-intervencao">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Peça -->
+  <div class="modal-overlay" id="modal-peca">
+    <div class="modal-box">
+      <div class="card-title">Adicionar Peça Aplicada</div>
+      <form id="form-peca">
+        <input type="hidden" id="p-id" />
+        <div class="form-group mt-16">
+          <label>Peça / Material *</label>
+          <input type="text" id="p-peca" required placeholder="Ex: Correia de comando, Terminal de encaixe..." />
+        </div>
+        <div class="form-grid mt-16">
+          <div class="form-group">
+            <label>Data de Aplicação</label>
+            <input type="date" id="p-data" />
+          </div>
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" id="p-qtd" min="1" value="1" />
+          </div>
+        </div>
+        <div class="form-group mt-16">
+          <label>Colaborador que Aplicou</label>
+          <select id="p-colaborador"><option value="">— Selecionar —</option></select>
+        </div>
+        <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+          <button type="button" class="btn btn-ghost" id="btn-cancelar-peca">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
         </div>
       </form>
@@ -184,14 +253,23 @@
       const eqLista = await db.query('equipment', `select=*&id=eq.${osAtual.equipment_id}`);
       equipAtual = eqLista[0];
 
-      document.getElementById('titulo-os').textContent = osAtual.numero_obra ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
+      document.getElementById('titulo-os').textContent = osAtual.numero_obra
+        ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
       document.getElementById('info-equip').textContent = equipAtual ? equipAtual.code : '—';
       document.getElementById('info-categoria').textContent = equipAtual ? (equipAtual.fleet_type||'—') : '—';
       document.getElementById('info-abertura').textContent = formatarData(osAtual.data_abertura);
       document.getElementById('info-fecho').textContent = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
-      document.getElementById('info-fisico').textContent = osAtual.status_fisico;
+      document.getElementById('info-horimetro').textContent = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' h' : '—';
       document.getElementById('info-workflow').textContent = osAtual.status_atual;
       document.getElementById('info-avaria').textContent = osAtual.descricao_avaria || '—';
+      document.getElementById('info-fisico').textContent = osAtual.status_fisico || '—';
+
+      // Tipo de intervenção — mostrar chips
+      if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
+        document.getElementById('info-tipo-wrap').style.display = 'block';
+        document.getElementById('info-tipo-chips').innerHTML =
+          osAtual.tipo_intervencao.map(t => `<span class="chip">${t}</span>`).join('');
+      }
 
       if (osAtual.observacoes) {
         document.getElementById('info-observacoes').textContent = osAtual.observacoes;
@@ -206,53 +284,92 @@
     async function carregarTimeline() {
       const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
       const ord = [...log].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
-      const lista = document.getElementById('lista-timeline');
-      lista.innerHTML = ord.length === 0 ? '<li>Sem registos.</li>' :
-        ord.map(ev => `<li>
-          <strong>${ev.status_anterior?ev.status_anterior+' → ':''}${ev.status_novo}</strong>
-          ${ev.observacao?' — '+ev.observacao:''}
-          <div class="meta">${ev.responsavel?ev.responsavel+' · ':''}${formatarDataHora(ev.data_mudanca)}</div>
-        </li>`).join('');
+      document.getElementById('lista-timeline').innerHTML = ord.length === 0
+        ? '<li>Sem registos.</li>'
+        : ord.map(ev => `<li>
+            <strong>${ev.status_anterior ? ev.status_anterior+' → ' : ''}${ev.status_novo}</strong>
+            ${ev.observacao ? ' — '+ev.observacao : ''}
+            <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : ''}${formatarDataHora(ev.data_mudanca)}</div>
+          </li>`).join('');
     }
 
     async function carregarTecnicosCheckbox() {
       collaboradoresAtivos = await db.query('collaborators','select=id,name,setor,code&active=eq.true&order=name.asc');
 
-      // Popular também o select de responsável do workflow
+      // Select de responsável do workflow
       const selResp = document.getElementById('responsavel-mudanca');
       collaboradoresAtivos.forEach(c => {
-        selResp.insertAdjacentHTML('beforeend', `<option value="${c.name}">${c.name}${c.code ? ' ('+c.code+')' : ''}</option>`);
+        selResp.insertAdjacentHTML('beforeend',
+          `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`);
       });
 
+      // Select de colaborador nas peças
+      const selPeca = document.getElementById('p-colaborador');
+      collaboradoresAtivos.forEach(c => {
+        selPeca.insertAdjacentHTML('beforeend',
+          `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`);
+      });
+
+      // Checklist de técnicos nas intervenções
       document.getElementById('i-tecnicos-lista').innerHTML = collaboradoresAtivos
-        .map(c => `<label><input type="checkbox" value="${c.id}" /> ${c.name}${c.setor?' — '+c.setor:''}</label>`)
-        .join('');
+        .map(c => `<label>
+          <input type="checkbox" value="${c.id}" />
+          ${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}
+        </label>`).join('');
     }
 
     async function carregarIntervencoes() {
-      const records = await db.query('records', `select=*&os_id=eq.${osId}`);
+      const records = await db.query('records', `select=*&os_id=eq.${osId}&order=shift_date.asc,time_start.asc`);
       const tbody = document.getElementById('tbody-intervencoes');
-      if (!records.length) { tbody.innerHTML='<tr><td colspan="8">Ainda sem intervenções registadas.</td></tr>'; return; }
+
+      if (!records.length) {
+        tbody.innerHTML = '<tr><td colspan="8">Ainda sem intervenções registadas.</td></tr>';
+        document.getElementById('total-horas').textContent = '0';
+        return;
+      }
 
       const relacoes = await db.query('record_collaborators','select=*');
-      tbody.innerHTML = records
-        .sort((a,b) => new Date(b.created_at)-new Date(a.created_at))
-        .map(r => {
-          const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
-          const nomes = idsColabs.map(id => {
-            const c = collaboradoresAtivos.find(x => x.id === id);
-            return c ? c.name : '—';
-          }).join(', ');
-          return `<tr>
-            <td>${r.shift_date || formatarData(r.created_at)}</td>
-            <td>${r.time_start||'—'}</td><td>${r.time_end||'—'}</td>
-            <td>${r.hours!=null?r.hours:'—'}</td>
-            <td>${r.description||'—'}</td>
-            <td>${nomes||'—'}</td>
-            <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
-            <td><button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button></td>
-          </tr>`;
-        }).join('');
+      let totalHoras = 0;
+
+      tbody.innerHTML = records.map(r => {
+        const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
+        const nomes = idsColabs.map(id => {
+          const c = collaboradoresAtivos.find(x => x.id === id);
+          return c ? `${c.name}${c.code?' ('+c.code+')':''}` : '—';
+        }).join(', ');
+        if (r.hours) totalHoras += parseFloat(r.hours);
+        return `<tr>
+          <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
+          <td>${r.time_start||'—'}</td>
+          <td>${r.time_end||'—'}</td>
+          <td>${r.hours!=null ? r.hours+'h' : '—'}</td>
+          <td>${r.description||'—'}</td>
+          <td>${nomes||'—'}</td>
+          <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
+          <td><button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button></td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('total-horas').textContent = Math.round(totalHoras * 100) / 100 + 'h';
+    }
+
+    async function carregarPecas() {
+      const pecas = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
+      const tbody = document.getElementById('tbody-pecas');
+      if (!pecas.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Sem peças registadas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = pecas.map(p => `<tr>
+        <td>${p.peca}</td>
+        <td>${p.data ? formatarData(p.data) : '—'}</td>
+        <td>${p.quantidade||1}</td>
+        <td>${p.colaborador||'—'}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="editarPeca(${p.id})" style="margin-right:4px">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarPeca(${p.id})">Apagar</button>
+        </td>
+      </tr>`).join('');
     }
 
     async function eliminarIntervencao(id) {
@@ -261,6 +378,29 @@
       await carregarIntervencoes();
     }
 
+    async function eliminarPeca(id) {
+      if (!confirm('Apagar esta peça?')) return;
+      await db.delete('os_pecas', id);
+      await carregarPecas();
+    }
+
+    // Guardar peça existente para edição
+    let pecasCache = [];
+    async function editarPeca(id) {
+      if (!pecasCache.length) {
+        pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
+      }
+      const p = pecasCache.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('p-id').value = p.id;
+      document.getElementById('p-peca').value = p.peca || '';
+      document.getElementById('p-data').value = p.data || '';
+      document.getElementById('p-qtd').value = p.quantidade || 1;
+      document.getElementById('p-colaborador').value = p.colaborador || '';
+      document.getElementById('modal-peca').classList.add('aberto');
+    }
+
+    // Workflow
     document.getElementById('btn-mudar-status').addEventListener('click', async () => {
       const novoStatus = document.getElementById('sel-novo-status').value;
       const responsavel = document.getElementById('responsavel-mudanca').value || null;
@@ -268,24 +408,27 @@
       const upd = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
       if (novoStatus === 'Fechada') upd.data_fecho = dataHoje();
       await db.update('ordens_servico', osId, upd);
-      await db.insert('os_status_log', { os_id: osId, status_anterior: osAtual.status_atual, status_novo: novoStatus, responsavel: responsavel||null });
+      await db.insert('os_status_log', {
+        os_id: osId, status_anterior: osAtual.status_atual,
+        status_novo: novoStatus, responsavel
+      });
       await carregarOS(); await carregarTimeline();
-      document.getElementById('responsavel-mudanca').value = '';
     });
 
     document.getElementById('btn-atualizar-fisico').addEventListener('click', async () => {
-      const upd = {
-        status_fisico: document.getElementById('sel-status-fisico').value,
-        atualizado_em: new Date().toISOString()
-      };
+      const upd = { status_fisico: document.getElementById('sel-status-fisico').value, atualizado_em: new Date().toISOString() };
       const nrObra = document.getElementById('campo-numero-obra').value.trim();
       if (nrObra) upd.numero_obra = nrObra;
       await db.update('ordens_servico', osId, upd);
       await carregarOS();
     });
 
+    // Modal Intervenção
     const modalIntervencao = document.getElementById('modal-intervencao');
     document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
+      document.getElementById('i-data').value = dataHoje();
+      document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]').forEach(cb => cb.checked = false);
+      document.getElementById('form-intervencao').reset();
       document.getElementById('i-data').value = dataHoje();
       modalIntervencao.classList.add('aberto');
     });
@@ -302,7 +445,7 @@
 
       const payload = {
         equipment_id: osAtual.equipment_id,
-        os_id: osId,
+        os_id: parseInt(osId),
         shift_date: document.getElementById('i-data').value,
         status: document.getElementById('i-status').value,
         time_start: inicio,
@@ -316,24 +459,59 @@
         const novo = await db.insert('records', payload);
         if (novo && novo.code) throw new Error(novo.message||'Erro');
         const recordId = Array.isArray(novo) ? novo[0].id : novo.id;
-        const selecionados = Array.from(document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]:checked')).map(el => el.value);
-        for (const colaboradorId of selecionados) {
-          await db.insert('record_collaborators', { record_id: recordId, collaborator_id: colaboradorId });
+        const selecionados = Array.from(
+          document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]:checked')
+        ).map(el => el.value);
+        for (const cId of selecionados) {
+          await db.insert('record_collaborators', { record_id: recordId, collaborator_id: parseInt(cId) });
         }
         modalIntervencao.classList.remove('aberto');
         document.getElementById('form-intervencao').reset();
         await carregarIntervencoes();
       } catch(err) {
-        console.error(err);
-        alert('Erro ao guardar a intervenção: ' + (err.message||err));
+        alert('Erro ao guardar a intervenção: '+(err.message||err));
+      }
+    });
+
+    // Modal Peça
+    const modalPeca = document.getElementById('modal-peca');
+    document.getElementById('btn-nova-peca').addEventListener('click', () => {
+      document.getElementById('form-peca').reset();
+      document.getElementById('p-id').value = '';
+      document.getElementById('p-data').value = dataHoje();
+      document.getElementById('p-qtd').value = 1;
+      pecasCache = [];
+      modalPeca.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-peca').addEventListener('click', () => modalPeca.classList.remove('aberto'));
+
+    document.getElementById('form-peca').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const id = document.getElementById('p-id').value;
+      const payload = {
+        os_id: parseInt(osId),
+        peca: document.getElementById('p-peca').value.trim(),
+        data: document.getElementById('p-data').value || null,
+        quantidade: parseFloat(document.getElementById('p-qtd').value) || 1,
+        colaborador: document.getElementById('p-colaborador').value || null,
+      };
+      try {
+        if (id) await db.update('os_pecas', id, payload);
+        else await db.insert('os_pecas', payload);
+        pecasCache = [];
+        modalPeca.classList.remove('aberto');
+        await carregarPecas();
+      } catch(err) {
+        alert('Erro ao guardar peça: '+(err.message||err));
       }
     });
 
     (async function init() {
+      await carregarTecnicosCheckbox();
       await carregarOS();
       await carregarTimeline();
-      await carregarTecnicosCheckbox();
       await carregarIntervencoes();
+      await carregarPecas();
     })();
   </script>
 </body>
