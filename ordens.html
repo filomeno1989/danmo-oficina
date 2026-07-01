@@ -8,8 +8,11 @@
   <style>
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
     .modal-overlay.aberto { display:flex; }
-    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:480px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
+    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
     .nota { font-size:12px; color:var(--text2); margin-top:4px; font-style:italic; }
+    .tipo-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:6px; margin-top:8px; }
+    .tipo-grid label { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; text-transform:none; cursor:pointer; color:var(--text); }
+    .tipo-grid input[type=checkbox] { width:auto; }
   </style>
 </head>
 <body>
@@ -80,19 +83,43 @@
     <div class="modal-box">
       <div class="card-title">Nova Ordem de Serviço</div>
       <form id="form-nova-os">
+
         <div class="form-group mt-16">
           <label>Nº Obra (fornecido pela CdM)</label>
           <input type="text" id="f-numero-obra" placeholder="Deixar vazio se ainda não atribuído" />
-          <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir o número.</span>
+          <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir.</span>
         </div>
+
         <div class="form-group mt-16">
           <label>Equipamento *</label>
           <select id="f-equipamento" required></select>
         </div>
+
         <div class="form-group mt-16">
-          <label>Descrição da Avaria / Motivo de Entrada *</label>
+          <label>Hora do Equipamento (Horímetro)</label>
+          <input type="number" id="f-horimetro" min="0" step="0.1" placeholder="Ex: 4521.5" />
+        </div>
+
+        <div class="form-group mt-16">
+          <label>Diagnóstico / Avaria / Motivo de Entrada *</label>
           <textarea id="f-descricao-avaria" rows="3" required placeholder="Ex: Falha no sistema de marcha, ruído no motor..."></textarea>
         </div>
+
+        <div class="form-group mt-16">
+          <label>Tipo de Intervenção</label>
+          <div class="tipo-grid">
+            <label><input type="checkbox" value="Inspeção Geral" /> Inspeção Geral</label>
+            <label><input type="checkbox" value="Reparação Pneus" /> Reparação Pneus</label>
+            <label><input type="checkbox" value="Lubrificação" /> Lubrificação</label>
+            <label><input type="checkbox" value="Rep. Sis. Mecânico" /> Rep. Sis. Mecânico</label>
+            <label><input type="checkbox" value="Rep. Sis. Hidráulico" /> Rep. Sis. Hidráulico</label>
+            <label><input type="checkbox" value="Rep. Sis. Elétrico" /> Rep. Sis. Elétrico</label>
+            <label><input type="checkbox" value="Revisão" /> Revisão</label>
+            <label><input type="checkbox" value="Rep. Estrutura" /> Rep. Estrutura</label>
+            <label><input type="checkbox" value="Outros" /> Outros</label>
+          </div>
+        </div>
+
         <div class="form-group mt-16">
           <label>Estado Físico *</label>
           <select id="f-status-fisico" required>
@@ -106,18 +133,22 @@
             <option value="Concluído">Concluído</option>
           </select>
         </div>
+
         <div class="form-group mt-16">
           <label>Data de Abertura *</label>
           <input type="date" id="f-data-abertura" required />
         </div>
+
         <div class="form-group mt-16">
           <label>Aberto por</label>
           <select id="f-aberto-por"><option value="">— Selecionar —</option></select>
         </div>
+
         <div class="form-group mt-16">
           <label>Observações</label>
           <textarea id="f-observacoes" rows="2"></textarea>
         </div>
+
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-os">Cancelar</button>
           <button type="submit" class="btn btn-primary">Criar Obra</button>
@@ -155,9 +186,10 @@
     }
 
     async function carregarColaboradores() {
-      const lista = await db.query('collaborators','select=id,name&active=eq.true&order=name.asc');
+      const lista = await db.query('collaborators','select=id,name,code&active=eq.true&order=name.asc');
       const sel = document.getElementById('f-aberto-por');
-      lista.forEach(c => sel.insertAdjacentHTML('beforeend',`<option value="${c.name}">${c.name}</option>`));
+      lista.forEach(c => sel.insertAdjacentHTML('beforeend',
+        `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`));
     }
 
     async function carregarOrdens() {
@@ -176,12 +208,16 @@
       if (ff) lista = lista.filter(o => o.status_fisico === ff);
       if (fb) lista = lista.filter(o => (o.numero_obra||'').toLowerCase().includes(fb));
       lista.sort((a,b) => new Date(b.data_abertura)-new Date(a.data_abertura));
+
       const tbody = document.getElementById('tbody-os');
       if (!lista.length) { tbody.innerHTML='<tr><td colspan="8">Nenhuma obra encontrada.</td></tr>'; return; }
+
       tbody.innerHTML = lista.map(o => {
         const eq = mapaEquip[o.equipment_id]||{};
         const badge = BADGE_FISICO[o.status_fisico]||'badge-gray';
-        const avaria = o.descricao_avaria ? (o.descricao_avaria.length>50?o.descricao_avaria.slice(0,50)+'…':o.descricao_avaria) : '—';
+        const avaria = o.descricao_avaria
+          ? (o.descricao_avaria.length>50 ? o.descricao_avaria.slice(0,50)+'…' : o.descricao_avaria)
+          : '—';
         return `<tr>
           <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${o.numero_obra||'<span class="text-muted">s/nº</span>'}</td>
           <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'—'}</td>
@@ -197,7 +233,7 @@
 
     async function eliminarOS(id, ev) {
       ev.stopPropagation();
-      if (!confirm('Apagar esta obra? Acção irreversível.')) return;
+      if (!confirm('Apagar esta obra e todas as suas intervenções? Acção irreversível.')) return;
       await db.delete('ordens_servico', id);
       await carregarOrdens();
     }
@@ -208,6 +244,7 @@
 
     const modal = document.getElementById('modal-nova-os');
     document.getElementById('btn-nova-os').addEventListener('click', () => {
+      document.getElementById('form-nova-os').reset();
       document.getElementById('f-data-abertura').value = dataHoje();
       modal.classList.add('aberto');
     });
@@ -215,29 +252,44 @@
 
     document.getElementById('form-nova-os').addEventListener('submit', async ev => {
       ev.preventDefault();
+
+      // Recolher tipos de intervenção selecionados
+      const tiposSelec = Array.from(
+        document.querySelectorAll('.tipo-grid input[type=checkbox]:checked')
+      ).map(cb => cb.value);
+
       const numeroObra = document.getElementById('f-numero-obra').value.trim() || null;
+      const horimetro  = document.getElementById('f-horimetro').value;
+
       const payload = {
-        numero_obra:      numeroObra,
-        equipment_id:     document.getElementById('f-equipamento').value,
-        descricao_avaria: document.getElementById('f-descricao-avaria').value.trim(),
-        data_abertura:    document.getElementById('f-data-abertura').value,
-        status_fisico:    document.getElementById('f-status-fisico').value,
-        status_atual:     'Aberta',
-        aberto_por:       document.getElementById('f-aberto-por').value || null,
-        observacoes:      document.getElementById('f-observacoes').value.trim() || null,
+        numero_obra:       numeroObra,
+        equipment_id:      document.getElementById('f-equipamento').value,
+        hora_equipamento:  horimetro ? parseFloat(horimetro) : null,
+        descricao_avaria:  document.getElementById('f-descricao-avaria').value.trim(),
+        tipo_intervencao:  tiposSelec.length > 0 ? tiposSelec : null,
+        data_abertura:     document.getElementById('f-data-abertura').value,
+        status_fisico:     document.getElementById('f-status-fisico').value,
+        status_atual:      'Aberta',
+        aberto_por:        document.getElementById('f-aberto-por').value || null,
+        observacoes:       document.getElementById('f-observacoes').value.trim() || null,
       };
+
       try {
         const nova = await db.insert('ordens_servico', payload);
         if (nova && nova.code) throw new Error(nova.message||'Erro');
         const novaId = Array.isArray(nova) ? nova[0].id : nova.id;
-        await db.insert('os_status_log',{os_id:novaId,status_anterior:null,status_novo:'Aberta',responsavel:payload.aberto_por,observacao:'Obra criada'});
+        await db.insert('os_status_log',{
+          os_id: novaId, status_anterior: null,
+          status_novo: 'Aberta', responsavel: payload.aberto_por,
+          observacao: 'Obra criada'
+        });
         modal.classList.remove('aberto');
         document.getElementById('form-nova-os').reset();
         await carregarOrdens();
       } catch(err) {
         const msg = String(err.message||err);
         if (msg.includes('uq_numero_obra')||msg.includes('duplicate')) {
-          alert('Este número de obra já existe. Cada obra tem um número único — confirme junto da CdM.');
+          alert('Este número de obra já existe. Confirme junto da CdM.');
         } else {
           alert('Erro ao criar a obra: '+msg);
         }
