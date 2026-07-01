@@ -9,6 +9,7 @@
     .timeline { list-style:none; margin-top:8px; }
     .timeline li { padding:10px 14px; border-left:3px solid var(--amber); margin-bottom:8px; border-radius:0 6px 6px 0; background:rgba(255,255,255,0.03); font-size:14px; }
     .timeline .meta { color:var(--text2); font-size:12px; margin-top:2px; }
+    .timeline-fisico li { border-left-color: var(--blue); }
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
     .modal-overlay.aberto { display:flex; }
     .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
@@ -17,11 +18,13 @@
     .checklist input[type=checkbox] { width:auto; }
     .info-box { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:12px; font-size:14px; }
     .info-box .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
-    .tipo-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:6px; margin-top:8px; }
+    .tipo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:6px; margin-top:8px; }
     .tipo-grid label { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; text-transform:none; cursor:pointer; color:var(--text); }
     .tipo-grid input[type=checkbox] { width:auto; }
     .chips-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
     .chip { background:rgba(245,158,11,0.15); color:var(--amber); border-radius:20px; padding:2px 10px; font-size:12px; }
+    .tecnicos-stack { display:flex; flex-direction:column; gap:2px; }
+    .tecnicos-stack span { font-size:12px; }
   </style>
 </head>
 <body>
@@ -36,10 +39,12 @@
     <div class="kpi-grid mt-24">
       <div class="kpi-card"><div class="kpi-label">Equipamento</div><div class="kpi-value" id="info-equip" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Categoria</div><div class="kpi-value" id="info-categoria" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Sector</div><div class="kpi-value" id="info-sector" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Horímetro</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
-      <div class="kpi-card blue"><div class="kpi-label">Workflow</div><div class="kpi-value" id="info-workflow" style="font-size:16px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Conta Horas</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:15px">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Estado da Obra</div><div class="kpi-value" id="info-workflow" style="font-size:15px">—</div></div>
     </div>
 
     <!-- Info da OS -->
@@ -47,10 +52,6 @@
       <div class="info-box">
         <div class="label">Avaria / Motivo de entrada</div>
         <div id="info-avaria">—</div>
-      </div>
-      <div class="info-box">
-        <div class="label">Estado Físico</div>
-        <div id="info-fisico">—</div>
       </div>
       <div id="info-tipo-wrap" style="display:none">
         <div class="info-box">
@@ -71,10 +72,10 @@
       <div class="card-title">Atualizar Estado</div>
       <div class="form-grid">
         <div class="form-group">
-          <label>Novo estado do Workflow</label>
+          <label>Estado da Obra</label>
           <select id="sel-novo-status">
-            <option value="Aberta">Aberta</option>
-            <option value="Em Supervisão">Em Supervisão</option>
+            <option value="Aberta (DTEC)">Aberta (DTEC)</option>
+            <option value="Supervisão">Supervisão</option>
             <option value="Chefe da Oficina">Chefe da Oficina</option>
             <option value="Departamento Técnico">Departamento Técnico</option>
             <option value="CdM">CdM</option>
@@ -86,7 +87,7 @@
           <select id="responsavel-mudanca"><option value="">— Selecionar —</option></select>
         </div>
         <div class="form-group" style="align-self:flex-end">
-          <button class="btn btn-primary" id="btn-mudar-status">Atualizar Workflow</button>
+          <button class="btn btn-primary" id="btn-mudar-status">Atualizar Estado da Obra</button>
         </div>
       </div>
       <div class="form-grid mt-16">
@@ -103,7 +104,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Número de Obra (se ainda não atribuído)</label>
+          <label>Nº de Obra (se ainda não atribuído)</label>
           <input type="text" id="campo-numero-obra" placeholder="Preencher quando CdM atribuir" />
         </div>
         <div class="form-group" style="align-self:flex-end">
@@ -112,10 +113,19 @@
       </div>
     </div>
 
-    <!-- Timeline -->
+    <!-- Histórico da Obra -->
     <div class="card">
-      <div class="card-title">Histórico do Workflow</div>
-      <ul class="timeline" id="lista-timeline"><li>A carregar...</li></ul>
+      <div class="card-title">Histórico da Obra</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:12px;color:var(--amber);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Estado da Obra</div>
+          <ul class="timeline" id="lista-timeline"><li>A carregar...</li></ul>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Estado Físico</div>
+          <ul class="timeline timeline-fisico" id="lista-timeline-fisico"><li>A carregar...</li></ul>
+        </div>
+      </div>
     </div>
 
     <!-- Intervenções -->
@@ -127,20 +137,24 @@
       <div class="table-wrap mt-16">
         <table>
           <thead>
-            <tr><th>Data</th><th>Início</th><th>Fim</th><th>Horas</th><th>Descrição</th><th>Técnicos</th><th>Estado</th><th></th></tr>
+            <tr><th>Data</th><th>Início</th><th>Fim</th><th>Horas</th><th>Técnicos</th><th>Setor(es)</th><th>Descrição</th><th>Estado</th><th></th></tr>
           </thead>
-          <tbody id="tbody-intervencoes"><tr><td colspan="8">A carregar...</td></tr></tbody>
+          <tbody id="tbody-intervencoes"><tr><td colspan="9">A carregar...</td></tr></tbody>
         </table>
       </div>
       <div class="kpi-grid mt-16">
         <div class="kpi-card green">
-          <div class="kpi-label">Total Horas Mão de Obra</div>
-          <div class="kpi-value" id="total-horas">0</div>
+          <div class="kpi-label">Total Horas (por técnico)</div>
+          <div class="kpi-value" id="total-horas-tecnicos">0h</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Horas (intervenções)</div>
+          <div class="kpi-value" id="total-horas-intervencoes">0h</div>
         </div>
       </div>
     </div>
 
-    <!-- Peças Aplicadas -->
+    <!-- Peças -->
     <div class="card">
       <div class="flex-between">
         <div class="card-title" style="margin-bottom:0">Peças Aplicadas</div>
@@ -149,7 +163,7 @@
       <div class="table-wrap mt-16">
         <table>
           <thead>
-            <tr><th>Peça</th><th>Data</th><th>Qtd</th><th>Colaborador</th><th></th></tr>
+            <tr><th>Peça / Material</th><th>Data</th><th>Qtd</th><th>Colaborador</th><th></th></tr>
           </thead>
           <tbody id="tbody-pecas"><tr><td colspan="5">Sem peças registadas.</td></tr></tbody>
         </table>
@@ -245,6 +259,13 @@
 
     if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
 
+    // Arredondamento CdM: <30min = arredonda para baixo, >=30min = arredonda para cima
+    function arredondarHoras(horasDecimal) {
+      const horas = Math.floor(horasDecimal);
+      const minutos = (horasDecimal - horas) * 60;
+      return minutos >= 30 ? horas + 1 : horas;
+    }
+
     async function carregarOS() {
       const lista = await db.query('ordens_servico', `select=*&id=eq.${osId}`);
       osAtual = lista[0];
@@ -255,33 +276,33 @@
 
       document.getElementById('titulo-os').textContent = osAtual.numero_obra
         ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
-      document.getElementById('info-equip').textContent = equipAtual ? equipAtual.code : '—';
-      document.getElementById('info-categoria').textContent = equipAtual ? (equipAtual.fleet_type||'—') : '—';
-      document.getElementById('info-abertura').textContent = formatarData(osAtual.data_abertura);
-      document.getElementById('info-fecho').textContent = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
-      document.getElementById('info-horimetro').textContent = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' h' : '—';
-      document.getElementById('info-workflow').textContent = osAtual.status_atual;
-      document.getElementById('info-avaria').textContent = osAtual.descricao_avaria || '—';
-      document.getElementById('info-fisico').textContent = osAtual.status_fisico || '—';
+      document.getElementById('info-equip').textContent      = equipAtual ? equipAtual.code : '—';
+      document.getElementById('info-categoria').textContent  = equipAtual ? (equipAtual.fleet_type||'—') : '—';
+      document.getElementById('info-sector').textContent     = osAtual.sector || '—';
+      document.getElementById('info-abertura').textContent   = formatarData(osAtual.data_abertura);
+      document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
+      document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' h' : '—';
+      document.getElementById('info-workflow').textContent   = osAtual.status_atual;
+      document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
+      document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
 
-      // Tipo de intervenção — mostrar chips
       if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
         document.getElementById('info-tipo-wrap').style.display = 'block';
         document.getElementById('info-tipo-chips').innerHTML =
           osAtual.tipo_intervencao.map(t => `<span class="chip">${t}</span>`).join('');
       }
-
       if (osAtual.observacoes) {
         document.getElementById('info-observacoes').textContent = osAtual.observacoes;
         document.getElementById('info-observacoes-wrap').style.display = 'block';
       }
 
-      document.getElementById('sel-novo-status').value = osAtual.status_atual;
+      document.getElementById('sel-novo-status').value  = osAtual.status_atual;
       document.getElementById('sel-status-fisico').value = osAtual.status_fisico;
       document.getElementById('campo-numero-obra').value = osAtual.numero_obra || '';
     }
 
     async function carregarTimeline() {
+      // Histórico de estado da obra
       const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
       const ord = [...log].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
       document.getElementById('lista-timeline').innerHTML = ord.length === 0
@@ -291,29 +312,32 @@
             ${ev.observacao ? ' — '+ev.observacao : ''}
             <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : ''}${formatarDataHora(ev.data_mudanca)}</div>
           </li>`).join('');
+
+      // Histórico de estado físico
+      const logFisico = await db.query('os_status_fisico_log', `select=*&os_id=eq.${osId}`);
+      const ordFisico = [...logFisico].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
+      document.getElementById('lista-timeline-fisico').innerHTML = ordFisico.length === 0
+        ? '<li>Sem registos.</li>'
+        : ordFisico.map(ev => `<li>
+            <strong>${ev.status_fisico}</strong>
+            <div class="meta">${formatarDataHora(ev.data_mudanca)}</div>
+          </li>`).join('');
     }
 
     async function carregarTecnicosCheckbox() {
       collaboradoresAtivos = await db.query('collaborators','select=id,name,setor,code&active=eq.true&order=name.asc');
 
-      // Select de responsável do workflow
       const selResp = document.getElementById('responsavel-mudanca');
-      collaboradoresAtivos.forEach(c => {
-        selResp.insertAdjacentHTML('beforeend',
-          `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`);
-      });
-
-      // Select de colaborador nas peças
       const selPeca = document.getElementById('p-colaborador');
       collaboradoresAtivos.forEach(c => {
-        selPeca.insertAdjacentHTML('beforeend',
-          `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`);
+        const label = `${c.name}${c.code?' ('+c.code+')':''}`;
+        selResp.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
+        selPeca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
       });
 
-      // Checklist de técnicos nas intervenções
       document.getElementById('i-tecnicos-lista').innerHTML = collaboradoresAtivos
         .map(c => `<label>
-          <input type="checkbox" value="${c.id}" />
+          <input type="checkbox" value="${c.id}" data-setor="${c.setor||''}" data-code="${c.code||''}" />
           ${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}
         </label>`).join('');
     }
@@ -323,43 +347,53 @@
       const tbody = document.getElementById('tbody-intervencoes');
 
       if (!records.length) {
-        tbody.innerHTML = '<tr><td colspan="8">Ainda sem intervenções registadas.</td></tr>';
-        document.getElementById('total-horas').textContent = '0';
+        tbody.innerHTML = '<tr><td colspan="9">Ainda sem intervenções registadas.</td></tr>';
+        document.getElementById('total-horas-tecnicos').textContent = '0h';
+        document.getElementById('total-horas-intervencoes').textContent = '0h';
         return;
       }
 
       const relacoes = await db.query('record_collaborators','select=*');
-      let totalHoras = 0;
+      let totalHorasIntervencoes = 0;
+      let totalHorasTecnicos = 0;
 
       tbody.innerHTML = records.map(r => {
         const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
-        const nomes = idsColabs.map(id => {
+        const tecnicos = idsColabs.map(id => {
           const c = collaboradoresAtivos.find(x => x.id === id);
           return c ? `${c.name}${c.code?' ('+c.code+')':''}` : '—';
-        }).join(', ');
-        if (r.hours) totalHoras += parseFloat(r.hours);
+        });
+        const setores = [...new Set(idsColabs.map(id => {
+          const c = collaboradoresAtivos.find(x => x.id === id);
+          return c && c.setor ? c.setor : null;
+        }).filter(Boolean))];
+
+        const nTecnicos = idsColabs.length || 1;
+        const horasArredondadas = r.hours != null ? arredondarHoras(parseFloat(r.hours)) : 0;
+        totalHorasIntervencoes += horasArredondadas;
+        totalHorasTecnicos += horasArredondadas * nTecnicos;
+
         return `<tr>
           <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
           <td>${r.time_start||'—'}</td>
           <td>${r.time_end||'—'}</td>
-          <td>${r.hours!=null ? r.hours+'h' : '—'}</td>
+          <td>${horasArredondadas}h${nTecnicos>1?' × '+nTecnicos:''}</td>
+          <td><div class="tecnicos-stack">${tecnicos.map(t=>`<span>${t}</span>`).join('')||'—'}</div></td>
+          <td><div class="tecnicos-stack">${setores.map(s=>`<span>${s}</span>`).join('')||'—'}</div></td>
           <td>${r.description||'—'}</td>
-          <td>${nomes||'—'}</td>
           <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
           <td><button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button></td>
         </tr>`;
       }).join('');
 
-      document.getElementById('total-horas').textContent = Math.round(totalHoras * 100) / 100 + 'h';
+      document.getElementById('total-horas-intervencoes').textContent = totalHorasIntervencoes + 'h';
+      document.getElementById('total-horas-tecnicos').textContent = totalHorasTecnicos + 'h';
     }
 
     async function carregarPecas() {
       const pecas = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
       const tbody = document.getElementById('tbody-pecas');
-      if (!pecas.length) {
-        tbody.innerHTML = '<tr><td colspan="5">Sem peças registadas.</td></tr>';
-        return;
-      }
+      if (!pecas.length) { tbody.innerHTML='<tr><td colspan="5">Sem peças registadas.</td></tr>'; return; }
       tbody.innerHTML = pecas.map(p => `<tr>
         <td>${p.peca}</td>
         <td>${p.data ? formatarData(p.data) : '—'}</td>
@@ -384,25 +418,22 @@
       await carregarPecas();
     }
 
-    // Guardar peça existente para edição
     let pecasCache = [];
     async function editarPeca(id) {
-      if (!pecasCache.length) {
-        pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
-      }
+      if (!pecasCache.length) pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
       const p = pecasCache.find(x => x.id === id);
       if (!p) return;
-      document.getElementById('p-id').value = p.id;
-      document.getElementById('p-peca').value = p.peca || '';
-      document.getElementById('p-data').value = p.data || '';
-      document.getElementById('p-qtd').value = p.quantidade || 1;
+      document.getElementById('p-id').value       = p.id;
+      document.getElementById('p-peca').value      = p.peca || '';
+      document.getElementById('p-data').value      = p.data || '';
+      document.getElementById('p-qtd').value       = p.quantidade || 1;
       document.getElementById('p-colaborador').value = p.colaborador || '';
       document.getElementById('modal-peca').classList.add('aberto');
     }
 
-    // Workflow
+    // Atualizar estado da obra
     document.getElementById('btn-mudar-status').addEventListener('click', async () => {
-      const novoStatus = document.getElementById('sel-novo-status').value;
+      const novoStatus  = document.getElementById('sel-novo-status').value;
       const responsavel = document.getElementById('responsavel-mudanca').value || null;
       if (novoStatus === osAtual.status_atual) { alert('Estado já é o atual.'); return; }
       const upd = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
@@ -415,21 +446,26 @@
       await carregarOS(); await carregarTimeline();
     });
 
+    // Atualizar estado físico — regista histórico automático
     document.getElementById('btn-atualizar-fisico').addEventListener('click', async () => {
-      const upd = { status_fisico: document.getElementById('sel-status-fisico').value, atualizado_em: new Date().toISOString() };
+      const novoFisico = document.getElementById('sel-status-fisico').value;
+      const upd = { status_fisico: novoFisico, atualizado_em: new Date().toISOString() };
       const nrObra = document.getElementById('campo-numero-obra').value.trim();
       if (nrObra) upd.numero_obra = nrObra;
       await db.update('ordens_servico', osId, upd);
-      await carregarOS();
+      // Só regista no histórico se o estado físico mudou
+      if (novoFisico !== osAtual.status_fisico) {
+        await db.insert('os_status_fisico_log', { os_id: osId, status_fisico: novoFisico });
+      }
+      await carregarOS(); await carregarTimeline();
     });
 
     // Modal Intervenção
     const modalIntervencao = document.getElementById('modal-intervencao');
     document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
-      document.getElementById('i-data').value = dataHoje();
-      document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]').forEach(cb => cb.checked = false);
       document.getElementById('form-intervencao').reset();
       document.getElementById('i-data').value = dataHoje();
+      document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]').forEach(cb => cb.checked = false);
       modalIntervencao.classList.add('aberto');
     });
     document.getElementById('btn-cancelar-intervencao').addEventListener('click', () => modalIntervencao.classList.remove('aberto'));
@@ -437,22 +473,24 @@
     document.getElementById('form-intervencao').addEventListener('submit', async ev => {
       ev.preventDefault();
       const inicio = document.getElementById('i-inicio').value;
-      const fim = document.getElementById('i-fim').value;
+      const fim    = document.getElementById('i-fim').value;
       const [h1,m1] = inicio.split(':').map(Number);
       const [h2,m2] = fim.split(':').map(Number);
-      let horas = (h2+m2/60)-(h1+m1/60);
-      if (horas < 0) horas += 24;
+      let horasDecimal = (h2+m2/60)-(h1+m1/60);
+      if (horasDecimal < 0) horasDecimal += 24;
+      // Arredondamento CdM
+      const horasArredondadas = arredondarHoras(horasDecimal);
 
       const payload = {
         equipment_id: osAtual.equipment_id,
-        os_id: parseInt(osId),
-        shift_date: document.getElementById('i-data').value,
-        status: document.getElementById('i-status').value,
-        time_start: inicio,
-        time_end: fim,
-        hours: Math.round(horas*100)/100,
-        description: document.getElementById('i-descricao').value.trim(),
-        continues: false,
+        os_id:        parseInt(osId),
+        shift_date:   document.getElementById('i-data').value,
+        status:       document.getElementById('i-status').value,
+        time_start:   inicio,
+        time_end:     fim,
+        hours:        horasArredondadas,
+        description:  document.getElementById('i-descricao').value.trim(),
+        continues:    false,
       };
 
       try {
@@ -489,15 +527,15 @@
       ev.preventDefault();
       const id = document.getElementById('p-id').value;
       const payload = {
-        os_id: parseInt(osId),
-        peca: document.getElementById('p-peca').value.trim(),
-        data: document.getElementById('p-data').value || null,
-        quantidade: parseFloat(document.getElementById('p-qtd').value) || 1,
+        os_id:       parseInt(osId),
+        peca:        document.getElementById('p-peca').value.trim(),
+        data:        document.getElementById('p-data').value || null,
+        quantidade:  parseFloat(document.getElementById('p-qtd').value)||1,
         colaborador: document.getElementById('p-colaborador').value || null,
       };
       try {
         if (id) await db.update('os_pecas', id, payload);
-        else await db.insert('os_pecas', payload);
+        else    await db.insert('os_pecas', payload);
         pecasCache = [];
         modalPeca.classList.remove('aberto');
         await carregarPecas();
