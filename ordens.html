@@ -6,21 +6,14 @@
   <title>Ordens de Serviço — Danmo Oficina</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      align-items: center; justify-content: center; z-index: 200;
-    }
-    .modal-overlay.aberto { display: flex; }
-    .modal-box {
-      background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 24px; width: 100%; max-width: 440px; box-shadow: var(--shadow);
-      max-height: 90vh; overflow-y: auto;
-    }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
+    .modal-overlay.aberto { display:flex; }
+    .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:480px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
+    .nota { font-size:12px; color:var(--text2); margin-top:4px; font-style:italic; }
   </style>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
-
   <main class="main">
     <div class="flex-between mt-16">
       <h1 class="page-title" style="margin-bottom:0">Ordens de Serviço</h1>
@@ -31,11 +24,11 @@
     <div class="card">
       <div class="form-grid">
         <div class="form-group">
-          <label>Estado do Workflow</label>
+          <label>Estado Workflow</label>
           <select id="filtro-status">
-            <option value="">Todos os estados</option>
+            <option value="">Todos</option>
             <option value="Aberta">Aberta</option>
-            <option value="Supervisão">Supervisão</option>
+            <option value="Em Supervisão">Em Supervisão</option>
             <option value="Chefe da Oficina">Chefe da Oficina</option>
             <option value="Departamento Técnico">Departamento Técnico</option>
             <option value="CdM">CdM</option>
@@ -44,7 +37,20 @@
         </div>
         <div class="form-group">
           <label>Equipamento</label>
-          <select id="filtro-equipamento"><option value="">Todos os equipamentos</option></select>
+          <select id="filtro-equipamento"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group">
+          <label>Estado Físico</label>
+          <select id="filtro-fisico">
+            <option value="">Todos</option>
+            <option value="Avariada">Avariada</option>
+            <option value="Acidentada">Acidentada</option>
+            <option value="Pneumático">Pneumático</option>
+            <option value="Revisão/Manutenção">Revisão/Manutenção</option>
+            <option value="Inspeção">Inspeção</option>
+            <option value="Aguarda Acessório">Aguarda Acessório</option>
+            <option value="Concluído">Concluído</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Buscar nº obra</label>
@@ -58,48 +64,51 @@
         <table>
           <thead>
             <tr>
-              <th>Nº Obra</th>
-              <th>Equipamento</th>
-              <th>Categoria</th>
-              <th>Abertura</th>
-              <th>Fecho</th>
-              <th>Estado Físico</th>
-              <th>Workflow</th>
+              <th>Nº Obra</th><th>Equipamento</th><th>Categoria</th>
+              <th>Avaria / Motivo</th><th>Abertura</th>
+              <th>Estado Físico</th><th>Workflow</th><th></th>
             </tr>
           </thead>
-          <tbody id="tbody-os">
-            <tr><td colspan="7">A carregar...</td></tr>
-          </tbody>
+          <tbody id="tbody-os"><tr><td colspan="8">A carregar...</td></tr></tbody>
         </table>
       </div>
     </div>
   </main>
 
+  <!-- Modal Nova OS -->
   <div class="modal-overlay" id="modal-nova-os">
     <div class="modal-box">
       <div class="card-title">Nova Ordem de Serviço</div>
       <form id="form-nova-os">
         <div class="form-group mt-16">
           <label>Nº Obra (fornecido pela CdM)</label>
-          <input type="text" id="f-numero-obra" required />
+          <input type="text" id="f-numero-obra" placeholder="Deixar vazio se ainda não atribuído" />
+          <span class="nota">Opcional — pode ser preenchido depois quando a CdM atribuir o número.</span>
         </div>
         <div class="form-group mt-16">
-          <label>Equipamento</label>
+          <label>Equipamento *</label>
           <select id="f-equipamento" required></select>
         </div>
         <div class="form-group mt-16">
-          <label>Data de Abertura</label>
-          <input type="date" id="f-data-abertura" required />
+          <label>Descrição da Avaria / Motivo de Entrada *</label>
+          <textarea id="f-descricao-avaria" rows="3" required placeholder="Ex: Falha no sistema de marcha, ruído no motor..."></textarea>
         </div>
         <div class="form-group mt-16">
-          <label>Estado Físico</label>
-          <select id="f-status-fisico">
+          <label>Estado Físico *</label>
+          <select id="f-status-fisico" required>
+            <option value="">— Selecionar —</option>
             <option value="Avariada">Avariada</option>
             <option value="Acidentada">Acidentada</option>
             <option value="Pneumático">Pneumático</option>
             <option value="Revisão/Manutenção">Revisão/Manutenção</option>
             <option value="Inspeção">Inspeção</option>
+            <option value="Aguarda Acessório">Aguarda Acessório</option>
+            <option value="Concluído">Concluído</option>
           </select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Data de Abertura *</label>
+          <input type="date" id="f-data-abertura" required />
         </div>
         <div class="form-group mt-16">
           <label>Aberto por</label>
@@ -125,78 +134,76 @@
   <script>
     renderNavbarOficina('ordens');
 
-    function badgeFisico(estado) {
-      if (estado === 'Avariada' || estado === 'Acidentada') return 'badge-red';
-      if (estado === 'Pneumático') return 'badge-amber';
-      return 'badge-blue'; // Revisão/Manutenção, Inspeção
-    }
+    const BADGE_FISICO = {
+      'Avariada':'badge-red','Acidentada':'badge-red','Pneumático':'badge-blue',
+      'Revisão/Manutenção':'badge-amber','Inspeção':'badge-amber',
+      'Aguarda Acessório':'badge-gray','Concluído':'badge-green'
+    };
 
-    let todasOrdens = [];
-    let mapaEquip = {};
+    let todasOrdens = [], mapaEquip = {};
 
     async function carregarEquipamentos() {
-      const equipamentos = await db.query('equipment', 'select=*&active=eq.true&order=code.asc');
-      equipamentos.forEach((e) => (mapaEquip[e.id] = e));
-
-      const selFiltro = document.getElementById('filtro-equipamento');
-      const selForm = document.getElementById('f-equipamento');
-      equipamentos.forEach((e) => {
-        const label = `${e.code} — ${e.fleet_type || e.name || ''}`;
-        selFiltro.insertAdjacentHTML('beforeend', `<option value="${e.id}">${label}</option>`);
-        selForm.insertAdjacentHTML('beforeend', `<option value="${e.id}">${label}</option>`);
+      const eq = await db.query('equipment','select=*&active=eq.true&order=code.asc');
+      eq.forEach(e => mapaEquip[e.id] = e);
+      const sf = document.getElementById('filtro-equipamento');
+      const ff = document.getElementById('f-equipamento');
+      eq.forEach(e => {
+        const label = `${e.code} — ${e.fleet_type||''}`;
+        sf.insertAdjacentHTML('beforeend',`<option value="${e.id}">${label}</option>`);
+        ff.insertAdjacentHTML('beforeend',`<option value="${e.id}">${label}</option>`);
       });
     }
 
     async function carregarColaboradores() {
-      const colaboradores = await db.query('collaborators', 'select=id,name&active=eq.true&order=name.asc');
+      const lista = await db.query('collaborators','select=id,name&active=eq.true&order=name.asc');
       const sel = document.getElementById('f-aberto-por');
-      colaboradores.forEach((c) => {
-        sel.insertAdjacentHTML('beforeend', `<option value="${c.name}">${c.name}</option>`);
-      });
+      lista.forEach(c => sel.insertAdjacentHTML('beforeend',`<option value="${c.name}">${c.name}</option>`));
     }
 
     async function carregarOrdens() {
-      todasOrdens = await db.query('ordens_servico', 'select=*');
+      todasOrdens = await db.query('ordens_servico','select=*');
       renderizarTabela();
     }
 
     function renderizarTabela() {
-      const filtroStatus = document.getElementById('filtro-status').value;
-      const filtroEquip = document.getElementById('filtro-equipamento').value;
-      const busca = document.getElementById('filtro-busca').value.trim().toLowerCase();
-
+      const fs = document.getElementById('filtro-status').value;
+      const fe = document.getElementById('filtro-equipamento').value;
+      const ff = document.getElementById('filtro-fisico').value;
+      const fb = document.getElementById('filtro-busca').value.trim().toLowerCase();
       let lista = [...todasOrdens];
-      if (filtroStatus) lista = lista.filter((o) => o.status_atual === filtroStatus);
-      if (filtroEquip) lista = lista.filter((o) => String(o.equipment_id) === filtroEquip);
-      if (busca) lista = lista.filter((o) => (o.numero_obra || '').toLowerCase().includes(busca));
-
-      lista.sort((a, b) => new Date(b.data_abertura) - new Date(a.data_abertura));
-
+      if (fs) lista = lista.filter(o => o.status_atual === fs);
+      if (fe) lista = lista.filter(o => String(o.equipment_id) === fe);
+      if (ff) lista = lista.filter(o => o.status_fisico === ff);
+      if (fb) lista = lista.filter(o => (o.numero_obra||'').toLowerCase().includes(fb));
+      lista.sort((a,b) => new Date(b.data_abertura)-new Date(a.data_abertura));
       const tbody = document.getElementById('tbody-os');
-      if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">Nenhuma obra encontrada.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = lista
-        .map((o) => {
-          const eq = mapaEquip[o.equipment_id] || {};
-          return `
-          <tr style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">
-            <td>${o.numero_obra}</td>
-            <td>${eq.code || '—'}</td>
-            <td>${eq.fleet_type || '—'}</td>
-            <td>${formatarData(o.data_abertura)}</td>
-            <td>${o.data_fecho ? formatarData(o.data_fecho) : '—'}</td>
-            <td><span class="badge ${badgeFisico(o.status_fisico)}">${o.status_fisico}</span></td>
-            <td>${o.status_atual}</td>
-          </tr>`;
-        })
-        .join('');
+      if (!lista.length) { tbody.innerHTML='<tr><td colspan="8">Nenhuma obra encontrada.</td></tr>'; return; }
+      tbody.innerHTML = lista.map(o => {
+        const eq = mapaEquip[o.equipment_id]||{};
+        const badge = BADGE_FISICO[o.status_fisico]||'badge-gray';
+        const avaria = o.descricao_avaria ? (o.descricao_avaria.length>50?o.descricao_avaria.slice(0,50)+'…':o.descricao_avaria) : '—';
+        return `<tr>
+          <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${o.numero_obra||'<span class="text-muted">s/nº</span>'}</td>
+          <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'—'}</td>
+          <td>${eq.fleet_type||'—'}</td>
+          <td title="${o.descricao_avaria||''}">${avaria}</td>
+          <td>${formatarData(o.data_abertura)}</td>
+          <td><span class="badge ${badge}">${o.status_fisico||'—'}</span></td>
+          <td>${o.status_atual}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="eliminarOS(${o.id},event)">Apagar</button></td>
+        </tr>`;
+      }).join('');
     }
 
-    document.getElementById('filtro-status').addEventListener('change', renderizarTabela);
-    document.getElementById('filtro-equipamento').addEventListener('change', renderizarTabela);
+    async function eliminarOS(id, ev) {
+      ev.stopPropagation();
+      if (!confirm('Apagar esta obra? Acção irreversível.')) return;
+      await db.delete('ordens_servico', id);
+      await carregarOrdens();
+    }
+
+    ['filtro-status','filtro-equipamento','filtro-fisico'].forEach(id =>
+      document.getElementById(id).addEventListener('change', renderizarTabela));
     document.getElementById('filtro-busca').addEventListener('input', renderizarTabela);
 
     const modal = document.getElementById('modal-nova-os');
@@ -206,41 +213,33 @@
     });
     document.getElementById('btn-cancelar-os').addEventListener('click', () => modal.classList.remove('aberto'));
 
-    document.getElementById('form-nova-os').addEventListener('submit', async (ev) => {
+    document.getElementById('form-nova-os').addEventListener('submit', async ev => {
       ev.preventDefault();
+      const numeroObra = document.getElementById('f-numero-obra').value.trim() || null;
       const payload = {
-        numero_obra: document.getElementById('f-numero-obra').value.trim(),
-        equipment_id: document.getElementById('f-equipamento').value,
-        data_abertura: document.getElementById('f-data-abertura').value,
-        status_fisico: document.getElementById('f-status-fisico').value,
-        status_atual: 'Aberta',
-        aberto_por: document.getElementById('f-aberto-por').value.trim() || null,
-        observacoes: document.getElementById('f-observacoes').value.trim() || null,
+        numero_obra:      numeroObra,
+        equipment_id:     document.getElementById('f-equipamento').value,
+        descricao_avaria: document.getElementById('f-descricao-avaria').value.trim(),
+        data_abertura:    document.getElementById('f-data-abertura').value,
+        status_fisico:    document.getElementById('f-status-fisico').value,
+        status_atual:     'Aberta',
+        aberto_por:       document.getElementById('f-aberto-por').value || null,
+        observacoes:      document.getElementById('f-observacoes').value.trim() || null,
       };
-
       try {
         const nova = await db.insert('ordens_servico', payload);
-        if (nova && nova.code) throw new Error(nova.message || 'Erro ao criar obra');
-
+        if (nova && nova.code) throw new Error(nova.message||'Erro');
         const novaId = Array.isArray(nova) ? nova[0].id : nova.id;
-        await db.insert('os_status_log', {
-          os_id: novaId,
-          status_anterior: null,
-          status_novo: 'Aberta',
-          responsavel: payload.aberto_por,
-          observacao: 'Obra criada',
-        });
-
+        await db.insert('os_status_log',{os_id:novaId,status_anterior:null,status_novo:'Aberta',responsavel:payload.aberto_por,observacao:'Obra criada'});
         modal.classList.remove('aberto');
         document.getElementById('form-nova-os').reset();
-        mostrarToast ? mostrarToast('Obra criada com sucesso') : null;
         await carregarOrdens();
-      } catch (err) {
-        console.error(err);
-        if (String(err.message || err).toLowerCase().includes('duplicate') || String(err.message || err).includes('uq_equipamento_numero_obra')) {
-          alert('Este número de obra já foi usado para este equipamento. Confirme o número junto da CdM.');
+      } catch(err) {
+        const msg = String(err.message||err);
+        if (msg.includes('uq_numero_obra')||msg.includes('duplicate')) {
+          alert('Este número de obra já existe. Cada obra tem um número único — confirme junto da CdM.');
         } else {
-          alert('Erro ao criar a obra. Verifique os dados e tente novamente.');
+          alert('Erro ao criar a obra: '+msg);
         }
       }
     });
