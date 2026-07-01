@@ -66,7 +66,9 @@
         </div>
         <div class="form-group">
           <label>Responsável</label>
-          <input type="text" id="responsavel-mudanca" placeholder="Nome" />
+          <select id="responsavel-mudanca">
+            <option value="">— Selecionar —</option>
+          </select>
         </div>
         <div class="form-group" style="align-self:flex-end">
           <button class="btn btn-primary" id="btn-mudar-status">Atualizar Workflow</button>
@@ -214,7 +216,14 @@
     }
 
     async function carregarTecnicosCheckbox() {
-      collaboradoresAtivos = await db.query('collaborators','select=id,name,setor&active=eq.true&order=name.asc');
+      collaboradoresAtivos = await db.query('collaborators','select=id,name,setor,code&active=eq.true&order=name.asc');
+
+      // Popular também o select de responsável do workflow
+      const selResp = document.getElementById('responsavel-mudanca');
+      collaboradoresAtivos.forEach(c => {
+        selResp.insertAdjacentHTML('beforeend', `<option value="${c.name}">${c.name}${c.code ? ' ('+c.code+')' : ''}</option>`);
+      });
+
       document.getElementById('i-tecnicos-lista').innerHTML = collaboradoresAtivos
         .map(c => `<label><input type="checkbox" value="${c.id}" /> ${c.name}${c.setor?' — '+c.setor:''}</label>`)
         .join('');
@@ -254,7 +263,7 @@
 
     document.getElementById('btn-mudar-status').addEventListener('click', async () => {
       const novoStatus = document.getElementById('sel-novo-status').value;
-      const responsavel = document.getElementById('responsavel-mudanca').value.trim();
+      const responsavel = document.getElementById('responsavel-mudanca').value || null;
       if (novoStatus === osAtual.status_atual) { alert('Estado já é o atual.'); return; }
       const upd = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
       if (novoStatus === 'Fechada') upd.data_fecho = dataHoje();
