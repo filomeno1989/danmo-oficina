@@ -28,12 +28,13 @@
   </style>
 </head>
 <body>
-  <div id="navbar" class="navbar"></div>
-  <main class="main">
-    <div class="flex-between mt-16">
-      <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra —</h1>
-      <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
-    </div>
+  <div class="flex-between mt-16">
+  <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra —</h1>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
+    <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
+  </div>
+</div>
 
     <!-- KPIs -->
     <div class="kpi-grid mt-24">
