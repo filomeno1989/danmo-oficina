@@ -5,51 +5,167 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Danmo Oficina</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .filtros-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:20px; }
+    .filtros-bar .form-group { margin:0; min-width:150px; }
+
+    /* KPI topo */
+    .kpi-topo { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
+
+    /* Tabela de frotas */
+    .frota-card { margin-bottom:20px; }
+    .frota-titulo {
+      font-size:13px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--amber); margin-bottom:8px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .frota-titulo .total-badge {
+      font-size:11px; color:var(--text2); font-weight:400;
+      text-transform:none; letter-spacing:0;
+    }
+
+    .frota-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .frota-table thead th {
+      background:var(--navy3); color:var(--text2);
+      font-size:10px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; padding:7px 10px; text-align:left;
+    }
+    .frota-table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); }
+    .frota-table tbody tr:last-child td { border-bottom:none; }
+
+    /* Barra de percentagem */
+    .barra-wrap { display:flex; align-items:center; gap:8px; min-width:180px; }
+    .barra-bg {
+      flex:1; height:8px; background:rgba(255,255,255,0.08);
+      border-radius:4px; overflow:hidden;
+    }
+    .barra-fill { height:100%; border-radius:4px; transition:width .4s; }
+    .barra-pct { font-size:11px; color:var(--text2); min-width:32px; text-align:right; }
+
+    .cor-disponivel { background:var(--green); }
+    .cor-avariada   { background:var(--red); }
+    .cor-acidentada { background:#f97316; }
+    .cor-pneumatico { background:var(--blue); }
+    .cor-revisao    { background:var(--amber); }
+    .cor-inspecao   { background:#a855f7; }
+    .cor-acessorio  { background:#64748b; }
+    .cor-concluido  { background:#22d3ee; }
+
+    .badge-disp { background:rgba(34,197,94,.15);  color:var(--green); }
+    .badge-av   { background:rgba(239,68,68,.15);   color:var(--red); }
+    .badge-ac   { background:rgba(249,115,22,.15);  color:#f97316; }
+    .badge-pn   { background:rgba(59,130,246,.15);  color:var(--blue); }
+    .badge-rv   { background:rgba(245,158,11,.15);  color:var(--amber); }
+    .badge-in   { background:rgba(168,85,247,.15);  color:#a855f7; }
+    .badge-aa   { background:rgba(100,116,139,.15); color:#94a3b8; }
+    .badge-co   { background:rgba(34,211,238,.15);  color:#22d3ee; }
+
+    /* Resumo geral em grid 2col */
+    .grid-2col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:700px){ .grid-2col { grid-template-columns:1fr; } }
+
+    .legenda { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; font-size:12px; }
+    .legenda-item { display:flex; align-items:center; gap:5px; }
+    .legenda-cor { width:10px; height:10px; border-radius:2px; }
+  </style>
 </head>
 <body>
   <div id="navbar" class="navbar"></div>
 
   <main class="main">
     <h1 class="page-title">Dashboard — Oficina</h1>
-    <p class="page-sub">Estado atual das máquinas e ordens de serviço</p>
+    <p class="page-sub">Disponibilidade da frota e estado das ordens de serviço</p>
 
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Em Reparação</div>
-        <div class="kpi-value" id="kpi-reparacao">—</div>
-      </div>
-      <div class="kpi-card red">
-        <div class="kpi-label">Aguarda Peças</div>
-        <div class="kpi-value" id="kpi-pecas">—</div>
-      </div>
-      <div class="kpi-card green">
-        <div class="kpi-label">Disponível</div>
-        <div class="kpi-value" id="kpi-disponivel">—</div>
+    <!-- Filtros -->
+    <div class="card">
+      <div class="filtros-bar">
+        <div class="form-group">
+          <label>Data início</label>
+          <input type="date" id="f-data-ini" />
+        </div>
+        <div class="form-group">
+          <label>Data fim</label>
+          <input type="date" id="f-data-fim" />
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="f-categoria">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sector</label>
+          <select id="f-sector">
+            <option value="">Todos</option>
+            <option value="Elétrica">Elétrica</option>
+            <option value="Mecânica">Mecânica</option>
+            <option value="Serralharia">Serralharia</option>
+            <option value="Pneumática">Pneumática</option>
+            <option value="Lubrificação">Lubrificação</option>
+            <option value="Piquete">Piquete</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-primary" id="btn-filtrar">Aplicar</button>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-ghost" id="btn-limpar">Limpar</button>
+        </div>
       </div>
     </div>
 
+    <!-- KPIs topo -->
+    <div class="kpi-topo" id="kpi-topo">
+      <div class="kpi-card"><div class="kpi-label">Total Obras Abertas</div><div class="kpi-value" id="kpi-abertas">—</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Sem Nº de Obra</div><div class="kpi-value" id="kpi-sem-nr">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Fechadas no Período</div><div class="kpi-value" id="kpi-fechadas">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Total Equipamentos Ativos</div><div class="kpi-value" id="kpi-total-equip">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Disponíveis</div><div class="kpi-value" id="kpi-disponiveis">—</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Na Oficina</div><div class="kpi-value" id="kpi-na-oficina">—</div></div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="legenda">
+      <div class="legenda-item"><div class="legenda-cor cor-disponivel"></div>Disponível</div>
+      <div class="legenda-item"><div class="legenda-cor cor-avariada"></div>Avariada</div>
+      <div class="legenda-item"><div class="legenda-cor cor-acidentada"></div>Acidentada</div>
+      <div class="legenda-item"><div class="legenda-cor cor-pneumatico"></div>Pneumático</div>
+      <div class="legenda-item"><div class="legenda-cor cor-revisao"></div>Revisão/Manutenção</div>
+      <div class="legenda-item"><div class="legenda-cor cor-inspecao"></div>Inspeção</div>
+      <div class="legenda-item"><div class="legenda-cor cor-acessorio"></div>Aguarda Acessório</div>
+      <div class="legenda-item"><div class="legenda-cor cor-concluido"></div>Concluído</div>
+    </div>
+
+    <!-- Disponibilidade por frota -->
     <div class="card">
-      <div class="card-title">Obras por estado do workflow</div>
-      <div class="kpi-grid" id="workflow-grid">
-        <div class="kpi-card blue"><div class="kpi-label">A carregar</div><div class="kpi-value">…</div></div>
+      <div class="card-title">Disponibilidade por Frota</div>
+      <div id="frotas-container">
+        <div class="spinner"></div>
       </div>
     </div>
 
+    <!-- Resumo por estado -->
+    <div class="grid-2col">
+      <div class="card">
+        <div class="card-title">Obras por Estado da Obra</div>
+        <div id="resumo-workflow">A carregar...</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Obras por Estado Físico</div>
+        <div id="resumo-fisico">A carregar...</div>
+      </div>
+    </div>
+
+    <!-- Obras sem nº há mais de X dias -->
     <div class="card">
-      <div class="card-title">Ordens de Serviço abertas</div>
+      <div class="card-title">Obras sem Nº de Obra (aguardam CdM)</div>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Nº Obra</th>
-              <th>Equipamento</th>
-              <th>Abertura</th>
-              <th>Estado Físico</th>
-              <th>Workflow</th>
-            </tr>
+            <tr><th>Equipamento</th><th>Categoria</th><th>Sector</th><th>Abertura</th><th>Dias à espera</th><th>Avaria</th></tr>
           </thead>
-          <tbody id="tbody-obras-abertas">
-            <tr><td colspan="5">A carregar...</td></tr>
+          <tbody id="tbody-sem-nr">
+            <tr><td colspan="6">A carregar...</td></tr>
           </tbody>
         </table>
       </div>
@@ -64,71 +180,286 @@
   <script>
     renderNavbarOficina('dashboard');
 
-    const ESTADOS_WORKFLOW = ['Aberta', 'Supervisão', 'Chefe da Oficina', 'Departamento Técnico', 'CdM', 'Fechada'];
+    const ESTADOS_FISICO = ['Avariada','Acidentada','Pneumático','Revisão/Manutenção','Inspeção','Aguarda Acessório','Concluído'];
+    const ESTADOS_WORKFLOW = ['Aberta (DTEC)','Supervisão','Chefe da Oficina','Departamento Técnico','CdM','Fechada'];
 
-    function badgeFisico(estado) {
-      if (estado === 'Em Reparação') return 'badge-amber';
-      if (estado === 'Aguarda Peças') return 'badge-red';
-      return 'badge-green';
+    const COR_FISICO = {
+      'Disponível':          'cor-disponivel',
+      'Avariada':            'cor-avariada',
+      'Acidentada':          'cor-acidentada',
+      'Pneumático':          'cor-pneumatico',
+      'Revisão/Manutenção':  'cor-revisao',
+      'Inspeção':            'cor-inspecao',
+      'Aguarda Acessório':   'cor-acessorio',
+      'Concluído':           'cor-concluido',
+    };
+
+    const BADGE_FISICO = {
+      'Disponível':         'badge-disp',
+      'Avariada':           'badge-av',
+      'Acidentada':         'badge-ac',
+      'Pneumático':         'badge-pn',
+      'Revisão/Manutenção': 'badge-rv',
+      'Inspeção':           'badge-in',
+      'Aguarda Acessório':  'badge-aa',
+      'Concluído':          'badge-co',
+    };
+
+    function diasDesde(data) {
+      return Math.floor((new Date() - new Date(data)) / 86400000);
     }
 
-    async function carregarDashboard() {
-      try {
-        const ordens = await db.query('ordens_servico', 'select=*');
-        const equipamentos = await db.query('equipment', 'select=id,code,name');
-        const mapaEquip = {};
-        equipamentos.forEach((e) => (mapaEquip[e.id] = e.code || e.name));
+    function barraHTML(pct, corClass) {
+      return `<div class="barra-wrap">
+        <div class="barra-bg"><div class="barra-fill ${corClass}" style="width:${pct}%"></div></div>
+        <div class="barra-pct">${pct}%</div>
+      </div>`;
+    }
 
-        const abertas = ordens.filter((o) => o.status_atual !== 'Fechada');
-        const contagemFisico = { 'Em Reparação': 0, 'Aguarda Peças': 0, 'Disponível': 0 };
-        abertas.forEach((o) => {
-          if (contagemFisico[o.status_fisico] !== undefined) contagemFisico[o.status_fisico]++;
-        });
+    let todosEquip = [], todasOrdens = [];
 
-        document.getElementById('kpi-reparacao').textContent = contagemFisico['Em Reparação'];
-        document.getElementById('kpi-pecas').textContent = contagemFisico['Aguarda Peças'];
-        document.getElementById('kpi-disponivel').textContent = contagemFisico['Disponível'];
+    async function carregarDados() {
+      const dataIni = document.getElementById('f-data-ini').value;
+      const dataFim = document.getElementById('f-data-fim').value;
+      const catFiltro = document.getElementById('f-categoria').value;
+      const sectFiltro = document.getElementById('f-sector').value;
 
-        const contagemWorkflow = {};
-        ESTADOS_WORKFLOW.forEach((e) => (contagemWorkflow[e] = 0));
-        ordens.forEach((o) => {
-          if (contagemWorkflow[o.status_atual] !== undefined) contagemWorkflow[o.status_atual]++;
-        });
+      // Carregar tudo
+      todosEquip  = await db.query('equipment', 'select=*&active=eq.true');
+      let qOrdens = 'select=*';
+      if (dataIni) qOrdens += `&data_abertura=gte.${dataIni}`;
+      if (dataFim) qOrdens += `&data_abertura=lte.${dataFim}`;
+      if (sectFiltro) qOrdens += `&sector=eq.${encodeURIComponent(sectFiltro)}`;
+      todasOrdens = await db.query('ordens_servico', qOrdens);
 
-        document.getElementById('workflow-grid').innerHTML = ESTADOS_WORKFLOW.map(
-          (estado) => `
-          <div class="kpi-card blue">
-            <div class="kpi-label">${estado}</div>
-            <div class="kpi-value">${contagemWorkflow[estado]}</div>
-          </div>`
-        ).join('');
+      // Equipamentos filtrados por categoria
+      let equipFiltrados = [...todosEquip];
+      if (catFiltro) equipFiltrados = equipFiltrados.filter(e => e.fleet_type === catFiltro);
 
-        const tbody = document.getElementById('tbody-obras-abertas');
-        if (abertas.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5">Sem obras abertas no momento.</td></tr>';
-        } else {
-          tbody.innerHTML = abertas
-            .sort((a, b) => new Date(b.data_abertura) - new Date(a.data_abertura))
-            .map(
-              (o) => `
-              <tr style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">
-                <td>${o.numero_obra}</td>
-                <td>${mapaEquip[o.equipment_id] || '—'}</td>
-                <td>${formatarData(o.data_abertura)}</td>
-                <td><span class="badge ${badgeFisico(o.status_fisico)}">${o.status_fisico}</span></td>
-                <td>${o.status_atual}</td>
-              </tr>`
-            )
-            .join('');
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dashboard:', err);
-        document.getElementById('tbody-obras-abertas').innerHTML =
-          '<tr><td colspan="5">Erro ao carregar dados.</td></tr>';
+      // Obras abertas (não fechadas)
+      const abertas = todasOrdens.filter(o => o.status_atual !== 'Fechada');
+      const fechadas = todasOrdens.filter(o => o.status_atual === 'Fechada');
+      const semNr = abertas.filter(o => !o.numero_obra);
+
+      // Equipamentos na oficina = tem pelo menos 1 OS aberta
+      const equipNaOficina = new Set(abertas.map(o => o.equipment_id));
+      const totalEquip = equipFiltrados.length;
+      const naOficina  = equipFiltrados.filter(e => equipNaOficina.has(e.id)).length;
+      const disponiveis = totalEquip - naOficina;
+
+      // KPIs topo
+      document.getElementById('kpi-abertas').textContent   = abertas.length;
+      document.getElementById('kpi-sem-nr').textContent    = semNr.length;
+      document.getElementById('kpi-fechadas').textContent  = fechadas.length;
+      document.getElementById('kpi-total-equip').textContent = totalEquip;
+      document.getElementById('kpi-disponiveis').textContent = disponiveis;
+      document.getElementById('kpi-na-oficina').textContent  = naOficina;
+
+      // Agrupamento por categoria → grupo → estado físico
+      renderFrotas(equipFiltrados, abertas);
+      renderResumoWorkflow(todasOrdens);
+      renderResumoFisico(abertas);
+      renderSemNr(semNr);
+    }
+
+    function renderFrotas(equips, abertas) {
+      // Categorias únicas
+      const categorias = [...new Set(equips.map(e => e.fleet_type).filter(Boolean))].sort();
+      const container  = document.getElementById('frotas-container');
+
+      if (!categorias.length) {
+        container.innerHTML = '<p class="text-muted">Sem equipamentos cadastrados.</p>';
+        return;
       }
+
+      // Para cada equipamento com OS aberta, pegar o último estado físico
+      // (pode ter várias OS abertas — usamos o pior estado)
+      const mapaEstadoEquip = {};
+      equips.forEach(e => {
+        const osAbertas = abertas.filter(o => o.equipment_id === e.id);
+        if (osAbertas.length === 0) {
+          mapaEstadoEquip[e.id] = 'Disponível';
+        } else {
+          // Prioridade: Acidentada > Avariada > Pneumático > Aguarda Acessório > Revisão > Inspeção > Concluído
+          const prioridade = ['Acidentada','Avariada','Pneumático','Aguarda Acessório','Revisão/Manutenção','Inspeção','Concluído'];
+          let estado = 'Concluído';
+          osAbertas.forEach(o => {
+            const idx = prioridade.indexOf(o.status_fisico);
+            if (idx !== -1 && idx < prioridade.indexOf(estado)) estado = o.status_fisico;
+            if (prioridade.indexOf(estado) === -1) estado = o.status_fisico;
+          });
+          mapaEstadoEquip[e.id] = estado;
+        }
+      });
+
+      let html = '';
+      categorias.forEach(cat => {
+        const equipCat = equips.filter(e => e.fleet_type === cat);
+        const total    = equipCat.length;
+
+        // Contar por estado
+        const contagem = { 'Disponível': 0 };
+        ESTADOS_FISICO.forEach(s => contagem[s] = 0);
+        equipCat.forEach(e => {
+          const est = mapaEstadoEquip[e.id] || 'Disponível';
+          if (contagem[est] !== undefined) contagem[est]++;
+          else contagem[est] = 1;
+        });
+
+        const disponiveis = contagem['Disponível'];
+        const pctDisp = total > 0 ? Math.round(disponiveis / total * 100) : 0;
+
+        html += `<div class="frota-card">
+          <div class="frota-titulo">
+            ${cat}
+            <span class="total-badge">Total: ${total} | Disponíveis: ${disponiveis} (${pctDisp}%)</span>
+          </div>
+          <table class="frota-table">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Qtd</th>
+                <th style="width:220px">Distribuição</th>
+                <th>% do Total</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        const todosEstados = ['Disponível', ...ESTADOS_FISICO];
+        todosEstados.forEach(est => {
+          const qtd = contagem[est] || 0;
+          if (qtd === 0) return;
+          const pct = total > 0 ? Math.round(qtd / total * 100) : 0;
+          const cor  = COR_FISICO[est] || 'cor-disponivel';
+          const badge = BADGE_FISICO[est] || '';
+          html += `<tr>
+            <td><span class="badge ${badge}">${est}</span></td>
+            <td>${qtd}</td>
+            <td>${barraHTML(pct, cor)}</td>
+            <td>${pct}%</td>
+          </tr>`;
+        });
+
+        html += `</tbody></table>`;
+
+        // Detalhes por equipamento (expansível)
+        html += `<div style="margin-top:8px;">
+          <details>
+            <summary style="cursor:pointer;font-size:11px;color:var(--text2);user-select:none;">
+              Ver detalhe por máquina (${total})
+            </summary>
+            <div class="table-wrap" style="margin-top:6px;">
+              <table class="frota-table">
+                <thead><tr><th>Código</th><th>Grupo</th><th>Estado</th><th>Obra(s) abertas</th></tr></thead>
+                <tbody>`;
+
+        equipCat.sort((a,b) => (a.code||'').localeCompare(b.code||'')).forEach(e => {
+          const est   = mapaEstadoEquip[e.id] || 'Disponível';
+          const badge = BADGE_FISICO[est] || '';
+          const osAb  = abertas.filter(o => o.equipment_id === e.id);
+          const obras = osAb.map(o => o.numero_obra || 'S/Nº').join(', ') || '—';
+          html += `<tr>
+            <td>${e.code}</td>
+            <td>${e.group_name||'—'}</td>
+            <td><span class="badge ${badge}">${est}</span></td>
+            <td>${obras}</td>
+          </tr>`;
+        });
+
+        html += `</tbody></table></div></details></div></div>`;
+      });
+
+      container.innerHTML = html;
     }
 
-    carregarDashboard();
+    function renderResumoWorkflow(ordens) {
+      const div = document.getElementById('resumo-workflow');
+      let html = '<table class="frota-table"><thead><tr><th>Estado</th><th>Qtd</th><th style="width:160px">Barra</th></tr></thead><tbody>';
+      const total = ordens.length || 1;
+      ESTADOS_WORKFLOW.forEach(est => {
+        const qtd = ordens.filter(o => o.status_atual === est).length;
+        if (!qtd) return;
+        const pct = Math.round(qtd / total * 100);
+        html += `<tr>
+          <td>${est}</td>
+          <td>${qtd}</td>
+          <td>${barraHTML(pct, 'cor-revisao')}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    }
+
+    function renderResumoFisico(abertas) {
+      const div = document.getElementById('resumo-fisico');
+      const total = abertas.length || 1;
+      let html = '<table class="frota-table"><thead><tr><th>Estado Físico</th><th>Qtd</th><th style="width:160px">Barra</th></tr></thead><tbody>';
+      ESTADOS_FISICO.forEach(est => {
+        const qtd = abertas.filter(o => o.status_fisico === est).length;
+        if (!qtd) return;
+        const pct = Math.round(qtd / total * 100);
+        const cor = COR_FISICO[est] || 'cor-avariada';
+        const badge = BADGE_FISICO[est] || '';
+        html += `<tr>
+          <td><span class="badge ${badge}">${est}</span></td>
+          <td>${qtd}</td>
+          <td>${barraHTML(pct, cor)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    }
+
+    function renderSemNr(semNr) {
+      const tbody = document.getElementById('tbody-sem-nr');
+      const mapaEquip = {};
+      todosEquip.forEach(e => mapaEquip[e.id] = e);
+
+      if (!semNr.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Nenhuma obra sem número de obra.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = semNr
+        .sort((a,b) => new Date(a.data_abertura) - new Date(b.data_abertura))
+        .map(o => {
+          const eq   = mapaEquip[o.equipment_id] || {};
+          const dias = diasDesde(o.data_abertura);
+          const cor  = dias > 14 ? 'color:var(--red);font-weight:700' : dias > 7 ? 'color:var(--amber)' : '';
+          const avaria = o.descricao_avaria
+            ? (o.descricao_avaria.length > 50 ? o.descricao_avaria.slice(0,50)+'…' : o.descricao_avaria)
+            : '—';
+          return `<tr>
+            <td><a href="os_detalhe.html?id=${o.id}" style="color:var(--amber)">${eq.code||'—'}</a></td>
+            <td>${eq.fleet_type||'—'}</td>
+            <td>${o.sector||'—'}</td>
+            <td>${formatarData(o.data_abertura)}</td>
+            <td style="${cor}">${dias} dia${dias!==1?'s':''}</td>
+            <td title="${o.descricao_avaria||''}">${avaria}</td>
+          </tr>`;
+        }).join('');
+    }
+
+    async function popularCategorias() {
+      const equips = await db.query('equipment', 'select=fleet_type&active=eq.true');
+      const cats   = [...new Set(equips.map(e => e.fleet_type).filter(Boolean))].sort();
+      const sel    = document.getElementById('f-categoria');
+      cats.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
+    }
+
+    document.getElementById('btn-filtrar').addEventListener('click', carregarDados);
+    document.getElementById('btn-limpar').addEventListener('click', () => {
+      document.getElementById('f-data-ini').value = '';
+      document.getElementById('f-data-fim').value = '';
+      document.getElementById('f-categoria').value = '';
+      document.getElementById('f-sector').value = '';
+      carregarDados();
+    });
+
+    (async function init() {
+      await popularCategorias();
+      await carregarDados();
+    })();
   </script>
 </body>
 </html>
