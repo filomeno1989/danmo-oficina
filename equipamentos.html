@@ -188,7 +188,10 @@
           <td>${e.model || '—'}</td>
           <td>${e.year_acquired || '—'}</td>
           <td><span class="badge ${e.active ? 'badge-green' : 'badge-gray'}">${e.active ? 'Ativo' : 'Inativo'}</span></td>
-          <td><button class="btn btn-ghost btn-sm" onclick="editarEquip(${e.id})">Editar</button></td>
+          <td>
+  <button class="btn btn-ghost btn-sm" onclick="window.location.href='maquina_historico.html?id=${e.id}'" style="margin-right:4px">📊 Histórico</button>
+  <button class="btn btn-ghost btn-sm" onclick="editarEquip(${e.id})">Editar</button>
+</td>
         </tr>`
         )
         .join('');
