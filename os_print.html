@@ -8,363 +8,303 @@
 
     body {
       font-family: 'Times New Roman', Times, serif;
-      font-size: 10px;
-      background: #e8e8e8;
-      color: #000;
+      font-size: 10.5px;
+      background: #dcdcdc;
+      color: #1a1a1a;
+    }
+
+    .btn-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 16px auto;
     }
 
     .btn-print {
-      display: block;
-      margin: 16px auto;
-      padding: 10px 32px;
+      padding: 10px 30px;
       background: #92D050;
-      color: #000;
+      color: #12210a;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 14px;
       font-weight: bold;
       cursor: pointer;
       font-family: 'Times New Roman', serif;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
     .folha {
       width: 210mm;
-      margin: 0 auto;
+      margin: 0 auto 40px;
       background: #fff;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.25);
-      margin-bottom: 40px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3);
     }
 
-    /* ── BLOCOS FIXOS ── */
-    .bloco-topo { padding: 7mm 9mm 3mm; background: #fff; }
-    .bloco-fundo { padding: 0 9mm 5mm; background: #fff; }
-    .bloco-meio  { padding: 0 9mm; }
+    .bloco-topo, .bloco-fundo, .bloco-meio { padding-left: 12mm; padding-right: 12mm; }
+    .bloco-topo { padding-top: 9mm; padding-bottom: 3mm; }
+    .bloco-fundo { padding-bottom: 6mm; }
 
-    /* ── CABEÇALHO ── */
+    /* ══ CABEÇALHO ══ */
     .cabecalho {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 4px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #92D050;
+      margin-bottom: 10px;
     }
 
-    .cab-esq { display: flex; align-items: center; gap: 8px; }
-    .cab-esq img { height: 44px; }
-    .empresa-info { font-size: 9px; line-height: 1.5; }
-    .empresa-info strong { font-size: 10px; font-weight: bold; }
+    .cab-esq { display: flex; align-items: center; gap: 10px; }
+    .cab-esq img { height: 46px; }
+    .empresa-nome { font-size: 13px; font-weight: bold; letter-spacing: .3px; }
+    .empresa-sub { font-size: 9px; color: #555; line-height: 1.5; margin-top: 1px; }
 
-    .cab-centro { flex: 1; text-align: center; padding: 0 8px; }
-    .titulo-doc {
-      font-size: 17px; font-weight: bold; text-transform: uppercase;
-      border: 2px solid #000; padding: 4px 14px; display: inline-block; letter-spacing: 1px;
+    .cab-centro { text-align: center; }
+    .doc-tipo {
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: #4a7c2e; font-weight: bold; margin-bottom: 2px;
     }
+    .doc-titulo { font-size: 20px; font-weight: bold; letter-spacing: .5px; }
 
-    .nr-data-wrap { display: flex; justify-content: center; margin-top: 5px; }
-    .nr-data {
-      display: inline-flex; border: 1px solid #000;
-    }
-    .nr-box {
-      padding: 2px 18px; text-align: center;
-    }
-    .nr-box:first-child { border-right: 1px solid #000; }
-    .nr-box .lbl { font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: .5px; }
-    .nr-box .val { font-size: 14px; font-weight: bold; display: block; min-width: 70px; }
-
+    .cab-dir { display: flex; align-items: center; gap: 14px; }
+    .id-box { text-align: right; }
+    .id-box .lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
+    .id-box .val { font-size: 15px; font-weight: bold; }
     .cab-dir img { height: 44px; }
 
-    .linha-bold { border-top: 2px solid #000; margin: 4px 0; }
-
-    /* ── CAMPOS PRINCIPAIS ── */
-    .campos { border: 1px solid #000; margin-bottom: 2px; }
-
-    .campo-row {
-      display: flex; align-items: stretch;
-      border-bottom: 1px solid #000; min-height: 17px;
-    }
-    .campo-row:last-child { border-bottom: none; }
-    .campo-row.duplo { display: grid; grid-template-columns: 1fr 1fr; }
-
-    .flabel {
-      background: #92D050; font-weight: bold; font-size: 8px;
-      text-transform: uppercase; padding: 2px 5px; min-width: 80px;
-      display: flex; align-items: center; border-right: 1px solid #000;
-      white-space: nowrap; letter-spacing: .3px;
-    }
-    .flabel.cinza { background: #bbb; }
-
-    .fvalor {
-      padding: 2px 6px; flex: 1;
-      font-size: 10px; display: flex; align-items: center;
+    /* ══ PAINEL INFO ══ */
+    .painel {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
-    .campo-div { border-left: 1px solid #000; display: flex; align-items: stretch; }
+    .info-block {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+    }
 
-    /* ── TIPOS INTERVENÇÃO ── */
-    .tipos-bloco { border-left: 1px solid #000; flex: 1; }
-    .tipos-row {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      border-bottom: 1px solid #000;
+    .info-block-title {
+      background: #92D050;
+      color: #12210a;
+      font-size: 8.5px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 3px 8px;
     }
-    .tipos-row:last-child { border-bottom: none; }
-    .tipo-item {
-      display: flex; align-items: center; gap: 4px;
-      padding: 2px 5px; font-size: 9px;
-      border-right: 1px solid #000;
-    }
-    .tipo-item:last-child { border-right: none; }
 
-    /* ── CHECKBOX ── */
-    .cb {
-      width: 11px; height: 11px; border: 1px solid #000;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 8px; font-weight: bold; flex-shrink: 0; background: #fff;
+    .info-row {
+      display: flex;
+      border-top: 1px solid #e5e5e5;
+      font-size: 10.5px;
     }
-    .cb.marcado { background: #000; color: #fff; }
+    .info-row:first-of-type { border-top: none; }
 
-    /* ── FUNÇÕES ── */
-    .funcoes { border: 1px solid #000; border-top: none; margin-bottom: 3px; }
-    .funcoes-row { display: grid; grid-template-columns: repeat(4, 1fr); }
-    .funcoes-row + .funcoes-row { border-top: 1px solid #000; }
-    .fi {
-      display: flex; align-items: center; gap: 4px;
-      padding: 2px 5px; font-size: 9px; min-height: 15px;
-      border-right: 1px solid #000;
-    }
-    .fi:last-child { border-right: none; }
-
-    /* ── TABELA MÃO DE OBRA ── */
-    .tabela-obra {
-      width: 100%; border-collapse: collapse;
-      font-size: 9px; margin-bottom: 3px;
-    }
-    .tabela-obra thead th {
-      background: #92D050; font-weight: bold; font-size: 8px;
-      text-transform: uppercase; padding: 2px 4px;
-      border: 1px solid #000; text-align: center;
-      font-family: 'Times New Roman', serif;
-    }
-    .tabela-obra tbody td {
-      border: 1px solid #000; padding: 2px 3px;
-      vertical-align: top; height: 20px;
-    }
-    .tabela-obra tfoot td {
-      border: 1px solid #000; padding: 2px 5px;
-      background: #92D050; font-weight: bold;
-      font-size: 8px; text-transform: uppercase;
-    }
-    .col-desc  { width: 44%; }
-    .col-nome  { width: 16%; }
-    .col-hora  { width: 17%; text-align: center; }
-    .col-total { width: 11%; text-align: center; }
-    .col-nr    { width: 7%; text-align: center; }
-
-    /* ── TABELA PEÇAS ── */
-    .tabela-pecas {
-      width: 100%; border-collapse: collapse;
-      font-size: 9px; margin-bottom: 3px;
-    }
-    .tabela-pecas thead th {
-      background: #92D050; font-weight: bold; font-size: 8px;
-      text-transform: uppercase; padding: 2px 4px;
-      border: 1px solid #000; text-align: center;
-      font-family: 'Times New Roman', serif;
-    }
-    .tabela-pecas tbody td {
-      border: 1px solid #000; padding: 2px 4px; height: 15px;
-    }
-    .col-pp { width: 50%; }
-    .col-dp { width: 16%; text-align: center; }
-    .col-qp { width: 10%; text-align: center; }
-    .col-cp { width: 24%; }
-
-    /* ── ASSINATURAS ── */
-    .assinaturas { border: 1px solid #000; margin-bottom: 4px; font-size: 9px; }
-    .ass-header {
-      display: grid; grid-template-columns: 150px 1fr 80px;
-      background: #92D050; border-bottom: 1px solid #000;
-    }
-    .ass-header div {
-      padding: 2px 5px; font-weight: bold;
-      font-size: 8px; text-transform: uppercase;
-      border-right: 1px solid #000;
-    }
-    .ass-header div:last-child { border-right: none; }
-
-    .ass-linha {
-      display: grid; grid-template-columns: 150px 1fr 80px;
-      border-top: 1px solid #000; min-height: 19px;
-    }
-    .ass-linha div {
-      padding: 2px 5px; border-right: 1px solid #000;
+    .info-key {
+      width: 96px; flex-shrink: 0;
+      padding: 4px 8px;
+      color: #666; font-size: 9px;
+      text-transform: uppercase; letter-spacing: .3px;
       display: flex; align-items: center;
     }
-    .ass-linha div:last-child { border-right: none; }
-    .ass-lbl {
-      background: #92D050; font-weight: bold;
-      font-size: 8px; text-transform: uppercase;
+    .info-val {
+      padding: 4px 8px;
+      flex: 1;
+      font-weight: 500;
+      display: flex; align-items: center;
+      border-left: 1px solid #e5e5e5;
     }
 
-    /* ── RODAPÉ LEGAL ── */
+    /* Checkboxes grid */
+    .cb-panel { padding: 6px 8px; }
+    .cb-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 10px;
+    }
+    .cb-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 9.5px; padding: 1px 0;
+    }
+    .cb {
+      width: 10px; height: 10px; border: 1.3px solid #333;
+      border-radius: 2px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: bold; color: #fff;
+    }
+    .cb.on { background: #4a7c2e; border-color: #4a7c2e; }
+
+    /* Diagnóstico bar */
+    .diag-box {
+      border: 1px solid #ccc; border-radius: 5px;
+      padding: 6px 10px; margin-bottom: 8px;
+      background: #fafcf8;
+    }
+    .diag-lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #4a7c2e; font-weight: bold; margin-bottom: 2px; }
+    .diag-txt { font-size: 11px; }
+
+    /* Funções técnicos */
+    .funcoes-bar {
+      display: flex; flex-wrap: wrap; gap: 4px 14px;
+      border: 1px solid #ccc; border-radius: 5px;
+      padding: 6px 10px; margin-bottom: 10px;
+      background: #fafcf8;
+    }
+    .funcoes-bar .cb-item { font-size: 9.5px; }
+
+    /* ══ TABELAS ══ */
+    .tabela-obra, .tabela-pecas {
+      width: 100%; border-collapse: collapse;
+      font-size: 9.5px; margin-bottom: 8px;
+    }
+    .tabela-obra caption, .tabela-pecas caption {
+      text-align: left; font-size: 9px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 1px; color: #4a7c2e; padding-bottom: 4px; caption-side: top;
+    }
+    .tabela-obra thead th, .tabela-pecas thead th {
+      background: #1f2d17; color: #fff; font-weight: bold; font-size: 8.3px;
+      text-transform: uppercase; letter-spacing: .4px; padding: 5px 6px;
+      text-align: left; font-family: 'Times New Roman', serif;
+      border-bottom: 2px solid #92D050;
+    }
+    .tabela-obra tbody td, .tabela-pecas tbody td {
+      padding: 4px 6px; border-bottom: 1px solid #e8e8e8; vertical-align: top;
+    }
+    .tabela-obra tbody tr:nth-child(even),
+    .tabela-pecas tbody tr:nth-child(even) { background: #f7faf5; }
+    .tabela-obra tfoot td {
+      padding: 5px 6px; background: #eaf3e2; font-weight: bold;
+      font-size: 9px; text-transform: uppercase; border-top: 2px solid #92D050;
+    }
+    .col-desc { width: 43%; } .col-nome { width: 17%; }
+    .col-hora { width: 16%; text-align:center; } .col-total { width: 12%; text-align:center; }
+    .col-nr { width: 6%; text-align:center; }
+    .col-pp { width: 50%; } .col-dp { width: 16%; text-align:center; }
+    .col-qp { width: 10%; text-align:center; } .col-cp { width: 24%; }
+
+    /* ══ ASSINATURAS ══ */
+    .assinaturas-wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+    .ass-box { border: 1px solid #ccc; border-radius: 5px; padding: 8px; text-align: center; min-height: 56px; display:flex; flex-direction:column; justify-content:flex-end; }
+    .ass-linha { border-bottom: 1px solid #999; height: 26px; }
+    .ass-cargo { font-size: 8px; text-transform: uppercase; letter-spacing: .6px; color: #666; margin-top: 4px; }
+    .ass-data { font-size: 8px; color: #999; margin-top: 1px; }
+
+    .emissao-box {
+      font-size: 8px; color: #666; text-align: center; margin-bottom: 8px;
+      border-top: 1px dashed #ccc; padding-top: 5px;
+    }
+    .emissao-box strong { color: #333; }
+
+    /* ══ RODAPÉ LEGAL ══ */
     .rodape-legal {
-      display: flex; justify-content: space-between;
-      align-items: flex-end; margin-top: 3px;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      border-top: 1px solid #ccc; padding-top: 5px;
     }
-    .rodape-texto { font-size: 7px; color: #444; line-height: 1.5; }
-    .rodape-logo img { height: 26px; }
+    .rodape-texto { font-size: 6.8px; color: #777; line-height: 1.5; }
+    .rodape-logo img { height: 24px; }
 
-    /* ══════════════════════════════
-       PRINT
-    ══════════════════════════════ */
     @media print {
       body { background: #fff; }
-      .btn-print { display: none !important; }
+      .btn-bar { display: none !important; }
       .folha { width: 100%; margin: 0; box-shadow: none; }
-
-      .bloco-topo {
-        position: fixed; top: 0; left: 0; right: 0;
-        background: #fff; z-index: 100;
-        padding: 5mm 8mm 2mm;
-      }
-      .bloco-fundo {
-        position: fixed; bottom: 0; left: 0; right: 0;
-        background: #fff; z-index: 100;
-        padding: 0 8mm 4mm;
-        border-top: 1px solid #ccc;
-      }
-      .bloco-meio {
-        padding: 0 8mm;
-      }
-
+      .bloco-topo { position: fixed; top: 0; left: 0; right: 0; background: #fff; z-index: 100; padding: 6mm 10mm 2mm; }
+      .bloco-fundo { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; z-index: 100; padding: 0 10mm 5mm; }
+      .bloco-meio { padding: 0 10mm; }
       @page { size: A4; margin: 0; }
-
-      /* Evitar quebrar linhas da tabela a meio */
       .tabela-obra tbody tr { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
 
-<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+<div class="btn-bar">
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
 
 <div class="folha">
 
-  <!-- ══ TOPO FIXO ══ -->
   <div class="bloco-topo" id="bloco-topo">
     <div class="cabecalho">
       <div class="cab-esq">
         <img src="DANMO.png" alt="Danmo" />
-        <div class="empresa-info">
-          <strong>Danmo Service System, Lda</strong><br/>
-          Porto da Beira<br/>
-          Nuit: 400024022
+        <div>
+          <div class="empresa-nome">Danmo Service System, Lda</div>
+          <div class="empresa-sub">Porto da Beira · Nuit: 400024022</div>
         </div>
       </div>
       <div class="cab-centro">
-        <div class="titulo-doc">Ordem de Reparação</div>
-        <div class="nr-data-wrap">
-          <div class="nr-data">
-            <div class="nr-box">
-              <div class="lbl">Nº Ordem</div>
-              <div class="val" id="p-nr-ordem">—</div>
-            </div>
-            <div class="nr-box">
-              <div class="lbl">Data</div>
-              <div class="val" id="p-data">—</div>
-            </div>
-          </div>
-        </div>
+        <div class="doc-tipo">Documento Técnico</div>
+        <div class="doc-titulo">Ordem de Reparação</div>
       </div>
       <div class="cab-dir">
+        <div class="id-box">
+          <div class="lbl">Nº Ordem</div>
+          <div class="val" id="p-nr-ordem">—</div>
+        </div>
+        <div class="id-box">
+          <div class="lbl">Data</div>
+          <div class="val" id="p-data">—</div>
+        </div>
         <img src="MMM.png" alt="Made in Mozambique" />
       </div>
     </div>
 
-    <div class="linha-bold"></div>
+    <div class="painel">
+      <div class="info-block">
+        <div class="info-block-title">Identificação</div>
+        <div class="info-row"><div class="info-key">Cliente</div><div class="info-val" id="p-cliente">CdM</div></div>
+        <div class="info-row"><div class="info-key">Equipamento</div><div class="info-val" id="p-equipamento">—</div></div>
+        <div class="info-row"><div class="info-key">Sector</div><div class="info-val" id="p-sector">—</div></div>
+        <div class="info-row"><div class="info-key">Conta Horas</div><div class="info-val" id="p-conta-horas"></div></div>
+        <div class="info-row"><div class="info-key">Abertura</div><div class="info-val" id="p-data-abertura">—</div></div>
+        <div class="info-row"><div class="info-key">Colaborador</div><div class="info-val" id="p-aberto-por">—</div></div>
+      </div>
 
-    <!-- Campos principais -->
-    <div class="campos">
-      <!-- Linha 1: Cliente + Tipos Intervenção -->
-      <div class="campo-row">
-        <div style="display:flex;align-items:stretch;width:210px;flex-shrink:0;">
-          <div class="flabel">Nome do Cliente</div>
-          <div class="fvalor" id="p-cliente">CdM</div>
-        </div>
-        <div class="tipos-bloco">
-          <div class="tipos-row">
-            <div class="tipo-item"><span class="cb" id="cb-ig"></span>&nbsp;Inspeção Geral</div>
-            <div class="tipo-item"><span class="cb" id="cb-rm"></span>&nbsp;Rep. Sis. Mecânico</div>
-            <div class="tipo-item"><span class="cb" id="cb-rv"></span>&nbsp;Revisão</div>
-          </div>
-          <div class="tipos-row">
-            <div class="tipo-item"><span class="cb" id="cb-rp"></span>&nbsp;Reparação Pneus</div>
-            <div class="tipo-item"><span class="cb" id="cb-rh"></span>&nbsp;Rep. Sis. Hidráulico</div>
-            <div class="tipo-item"><span class="cb" id="cb-re"></span>&nbsp;Rep. Estrutura</div>
-          </div>
-          <div class="tipos-row">
-            <div class="tipo-item"><span class="cb" id="cb-lb"></span>&nbsp;Lubrificação</div>
-            <div class="tipo-item"><span class="cb" id="cb-rel"></span>&nbsp;Rep. Sis. Elétrico</div>
-            <div class="tipo-item"><span class="cb" id="cb-ot"></span>&nbsp;Outros</div>
+      <div class="info-block">
+        <div class="info-block-title">Tipo de Intervenção</div>
+        <div class="cb-panel">
+          <div class="cb-grid">
+            <div class="cb-item"><span class="cb" id="cb-ig"></span>Inspeção Geral</div>
+            <div class="cb-item"><span class="cb" id="cb-rm"></span>Rep. Sis. Mecânico</div>
+            <div class="cb-item"><span class="cb" id="cb-rp"></span>Reparação Pneus</div>
+            <div class="cb-item"><span class="cb" id="cb-rh"></span>Rep. Sis. Hidráulico</div>
+            <div class="cb-item"><span class="cb" id="cb-lb"></span>Lubrificação</div>
+            <div class="cb-item"><span class="cb" id="cb-rel"></span>Rep. Sis. Elétrico</div>
+            <div class="cb-item"><span class="cb" id="cb-rv"></span>Revisão</div>
+            <div class="cb-item"><span class="cb" id="cb-re"></span>Rep. Estrutura</div>
+            <div class="cb-item"><span class="cb" id="cb-ot"></span>Outros</div>
           </div>
         </div>
-      </div>
-      <!-- Linha 2: Equipamento + Sector -->
-      <div class="campo-row duplo">
-        <div style="display:flex;align-items:stretch;">
-          <div class="flabel">Equipamento</div>
-          <div class="fvalor" id="p-equipamento">—</div>
-        </div>
-        <div class="campo-div">
-          <div class="flabel cinza">Sector</div>
-          <div class="fvalor" id="p-sector">—</div>
-        </div>
-      </div>
-      <!-- Linha 3: Conta Horas + Abertura -->
-      <div class="campo-row duplo">
-        <div style="display:flex;align-items:stretch;">
-          <div class="flabel">Conta Horas</div>
-          <div class="fvalor" id="p-conta-horas"></div>
-        </div>
-        <div class="campo-div">
-          <div class="flabel cinza">Abertura</div>
-          <div class="fvalor" id="p-data-abertura">—</div>
-        </div>
-      </div>
-      <!-- Linha 4: Diagnóstico -->
-      <div class="campo-row">
-        <div class="flabel">Diagnóstico</div>
-        <div class="fvalor" id="p-diagnostico">—</div>
-      </div>
-      <!-- Linha 5: Colaborador -->
-      <div class="campo-row" style="border-bottom:none;">
-        <div class="flabel">Colaborador</div>
-        <div class="fvalor" id="p-aberto-por">—</div>
       </div>
     </div>
 
-    <!-- Funções dos técnicos -->
-    <div class="funcoes">
-      <div class="funcoes-row">
-        <div class="fi"><span class="cb" id="cb-mec"></span>&nbsp;Mecânico</div>
-        <div class="fi"><span class="cb" id="cb-ele"></span>&nbsp;Eletricista</div>
-        <div class="fi"><span class="cb" id="cb-lub"></span>&nbsp;Lubrificador</div>
-        <div class="fi"><span class="cb" id="cb-piq"></span>&nbsp;Piquete</div>
-      </div>
-      <div class="funcoes-row">
-        <div class="fi"><span class="cb" id="cb-pne"></span>&nbsp;Pneumático</div>
-        <div class="fi"><span class="cb" id="cb-ser"></span>&nbsp;Serralheiro</div>
-        <div class="fi"><span class="cb" id="cb-tor"></span>&nbsp;Torneiro</div>
-        <div class="fi"><span class="cb" id="cb-out"></span>&nbsp;Outro</div>
-      </div>
+    <div class="diag-box">
+      <div class="diag-lbl">Diagnóstico / Motivo de Entrada</div>
+      <div class="diag-txt" id="p-diagnostico">—</div>
     </div>
-  </div><!-- fim bloco-topo -->
 
-  <!-- ══ MEIO — tabela mão de obra (flui entre páginas) ══ -->
+    <div class="funcoes-bar">
+      <div class="cb-item"><span class="cb" id="cb-mec"></span>Mecânico</div>
+      <div class="cb-item"><span class="cb" id="cb-ele"></span>Eletricista</div>
+      <div class="cb-item"><span class="cb" id="cb-lub"></span>Lubrificador</div>
+      <div class="cb-item"><span class="cb" id="cb-piq"></span>Piquete</div>
+      <div class="cb-item"><span class="cb" id="cb-pne"></span>Pneumático</div>
+      <div class="cb-item"><span class="cb" id="cb-ser"></span>Serralheiro</div>
+      <div class="cb-item"><span class="cb" id="cb-tor"></span>Torneiro</div>
+      <div class="cb-item"><span class="cb" id="cb-out"></span>Outro</div>
+    </div>
+  </div>
+
   <div class="bloco-meio" id="bloco-meio">
     <table class="tabela-obra">
+      <caption>Descrição da Mão de Obra</caption>
       <thead>
         <tr>
-          <th class="col-desc">Descrição da Mão de Obra</th>
-          <th class="col-nome">Nome</th>
+          <th class="col-desc">Descrição do Trabalho</th>
+          <th class="col-nome">Técnico</th>
           <th class="col-hora">Hora (Início — Fim)</th>
           <th class="col-total">Tempo Total</th>
           <th class="col-nr">Nº</th>
@@ -373,54 +313,50 @@
       <tbody id="tbody-obra"></tbody>
       <tfoot>
         <tr>
-          <td colspan="3" style="text-align:right;">Tempo Total Mão de Obra</td>
-          <td style="text-align:center;" id="p-total-horas"></td>
+          <td colspan="3" style="text-align:right">Tempo Total Mão de Obra</td>
+          <td style="text-align:center" id="p-total-horas"></td>
           <td></td>
         </tr>
       </tfoot>
     </table>
   </div>
 
-  <!-- ══ FUNDO FIXO ══ -->
   <div class="bloco-fundo" id="bloco-fundo">
-    <!-- Peças -->
     <table class="tabela-pecas">
+      <caption>Peças Aplicadas</caption>
       <thead>
         <tr>
-          <th class="col-pp">Peça Aplicada</th>
+          <th class="col-pp">Peça / Material</th>
           <th class="col-dp">Data</th>
-          <th class="col-qp">Quantidade</th>
-          <th class="col-cp">Nome Colab.</th>
+          <th class="col-qp">Qtd</th>
+          <th class="col-cp">Aplicado por</th>
         </tr>
       </thead>
       <tbody id="tbody-pecas"></tbody>
     </table>
 
-    <!-- Assinaturas -->
-    <div class="assinaturas">
-      <div class="ass-header">
-        <div></div><div>Assinatura</div><div>Data</div>
-      </div>
-      <div class="ass-linha"><div class="ass-lbl">Responsável Abertura</div><div></div><div></div></div>
-      <div class="ass-linha"><div class="ass-lbl">Supervisor</div><div></div><div></div></div>
-      <div class="ass-linha"><div class="ass-lbl">Chefe da Oficina</div><div></div><div></div></div>
-      <div class="ass-linha"><div class="ass-lbl">Cliente</div><div></div><div></div></div>
+    <div class="assinaturas-wrap">
+      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Responsável Abertura</div><div class="ass-data">Data: ___/___/_____</div></div>
+      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Supervisor</div><div class="ass-data">Data: ___/___/_____</div></div>
+      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Chefe da Oficina</div><div class="ass-data">Data: ___/___/_____</div></div>
+      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Cliente (CdM)</div><div class="ass-data">Data: ___/___/_____</div></div>
     </div>
 
-    <!-- Rodapé legal -->
+    <div class="emissao-box">
+      Documento emitido eletronicamente por <strong>Filomeno Manuel Joaquim Alexandre</strong> — Assistente Administrativo — <span id="p-emissao-data"></span>
+    </div>
+
     <div class="rodape-legal">
       <div class="rodape-texto">
         Código: DAN_ADO_FR_023_REV03_06.06.25<br/>
         Este documento é propriedade da DANMO. Não é permitida sua reprodução sem autorização.<br/>
         Depois de impresso este documento é considerado cópia não controlado
       </div>
-      <div class="rodape-logo">
-        <img src="MESQUITA.png" alt="Grupo Mesquita" />
-      </div>
+      <div class="rodape-logo"><img src="MESQUITA.png" alt="Grupo Mesquita" /></div>
     </div>
-  </div><!-- fim bloco-fundo -->
+  </div>
 
-</div><!-- fim folha -->
+</div>
 
 <script src="supabase.js"></script>
 <script src="utils.js"></script>
@@ -431,7 +367,7 @@
 
   function marcar(id) {
     const el = document.getElementById(id);
-    if (el) { el.textContent = '✓'; el.classList.add('marcado'); }
+    if (el) { el.textContent = '✓'; el.classList.add('on'); }
   }
 
   function fData(str) {
@@ -461,12 +397,9 @@
     const mb = fundo.offsetHeight + 10;
     meio.style.marginTop    = mt + 'px';
     meio.style.marginBottom = mb + 'px';
-    // injetar para print
     let s = document.getElementById('_pm');
     if (!s) { s = document.createElement('style'); s.id = '_pm'; document.head.appendChild(s); }
-    s.textContent = `@media print {
-      .bloco-meio { margin-top: ${mt}px !important; margin-bottom: ${mb}px !important; }
-    }`;
+    s.textContent = `@media print { .bloco-meio { margin-top: ${mt}px !important; margin-bottom: ${mb}px !important; } }`;
   }
 
   async function carregar() {
@@ -487,35 +420,23 @@
     document.getElementById('p-diagnostico').textContent  = os.descricao_avaria || '—';
     document.getElementById('p-aberto-por').textContent   = os.aberto_por || '—';
 
-    // Tipos intervenção
-    const mapaTipo = {
-      'Inspeção Geral':       'cb-ig',
-      'Reparação Pneus':      'cb-rp',
-      'Lubrificação':         'cb-lb',
-      'Rep. Sis. Mecânico':   'cb-rm',
-      'Rep. Sis. Hidráulico': 'cb-rh',
-      'Rep. Sis. Elétrico':   'cb-rel',
-      'Revisão':              'cb-rv',
-      'Rep. Estrutura':       'cb-re',
-      'Outros':               'cb-ot',
-    };
-    if (os.tipo_intervencao) {
-      os.tipo_intervencao.forEach(t => { if (mapaTipo[t]) marcar(mapaTipo[t]); });
-    }
+    const hoje = new Date();
+    document.getElementById('p-emissao-data').textContent = hoje.toLocaleDateString('pt-PT', { day:'2-digit', month:'long', year:'numeric' });
 
-    // Intervenções
+    const mapaTipo = {
+      'Inspeção Geral':'cb-ig','Reparação Pneus':'cb-rp','Lubrificação':'cb-lb',
+      'Rep. Sis. Mecânico':'cb-rm','Rep. Sis. Hidráulico':'cb-rh','Rep. Sis. Elétrico':'cb-rel',
+      'Revisão':'cb-rv','Rep. Estrutura':'cb-re','Outros':'cb-ot',
+    };
+    if (os.tipo_intervencao) os.tipo_intervencao.forEach(t => { if (mapaTipo[t]) marcar(mapaTipo[t]); });
+
     const records  = await db.query('records', `select=*&os_id=eq.${osId}&order=shift_date.asc,time_start.asc`);
     const relacoes = await db.query('record_collaborators', 'select=*');
     const colabs   = await db.query('collaborators', 'select=id,name,code,setor&active=eq.true');
 
     const mapaFuncao = {
-      'Mecânica':     'cb-mec',
-      'Elétrica':     'cb-ele',
-      'Lubrificação': 'cb-lub',
-      'Piquete':      'cb-piq',
-      'Pneumática':   'cb-pne',
-      'Serralharia':  'cb-ser',
-      'Torneiro':     'cb-tor',
+      'Mecânica':'cb-mec','Elétrica':'cb-ele','Lubrificação':'cb-lub','Piquete':'cb-piq',
+      'Pneumática':'cb-pne','Serralharia':'cb-ser','Torneiro':'cb-tor',
     };
 
     const setoresUsados = new Set();
@@ -535,54 +456,43 @@
       if (tecnicos.length === 0) {
         linhas.push({ desc: descBase, nome: '', ini: r.time_start||'', fim: r.time_end||'', total: hArr>0?hArr+'h':'', nr: '' });
       } else {
-        // Repete descrição para cada técnico (legível para o cliente)
         tecnicos.forEach(c => {
-          linhas.push({
-            desc:  descBase,
-            nome:  c.name,
-            ini:   r.time_start||'',
-            fim:   r.time_end||'',
-            total: hArr > 0 ? hArr+'h' : '',
-            nr:    nrColab(c.code),
-          });
+          linhas.push({ desc: descBase, nome: c.name, ini: r.time_start||'', fim: r.time_end||'', total: hArr>0?hArr+'h':'', nr: nrColab(c.code) });
         });
       }
     });
 
     setoresUsados.forEach(s => { if (mapaFuncao[s]) marcar(mapaFuncao[s]); });
 
-    // Preencher tabela — mínimo 8 linhas fixas
     const tbody = document.getElementById('tbody-obra');
     tbody.innerHTML = '';
-    for (let i = 0; i < Math.max(linhas.length, 8); i++) {
+    for (let i = 0; i < Math.max(linhas.length, 6); i++) {
       const l  = linhas[i] || { desc:'', nome:'', ini:'', fim:'', total:'', nr:'' };
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="col-desc">${l.desc}</td>
         <td class="col-nome">${l.nome}</td>
-        <td class="col-hora" style="text-align:center">${l.ini && l.fim ? l.ini+' — '+l.fim : ''}</td>
-        <td class="col-total" style="text-align:center">${l.total}</td>
-        <td class="col-nr" style="text-align:center">${l.nr}</td>`;
+        <td class="col-hora">${l.ini && l.fim ? l.ini+' — '+l.fim : ''}</td>
+        <td class="col-total">${l.total}</td>
+        <td class="col-nr">${l.nr}</td>`;
       tbody.appendChild(tr);
     }
     document.getElementById('p-total-horas').textContent = totalHoras > 0 ? totalHoras+'h' : '';
 
-    // Peças — mínimo 6 linhas fixas
     const pecas  = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
     const tbodyP = document.getElementById('tbody-pecas');
     tbodyP.innerHTML = '';
-    for (let i = 0; i < Math.max(pecas.length, 6); i++) {
+    for (let i = 0; i < Math.max(pecas.length, 4); i++) {
       const p  = pecas[i] || {};
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="col-pp">${p.peca||''}</td>
-        <td class="col-dp" style="text-align:center">${p.data ? fData(p.data) : ''}</td>
-        <td class="col-qp" style="text-align:center">${p.quantidade||''}</td>
+        <td class="col-dp">${p.data ? fData(p.data) : ''}</td>
+        <td class="col-qp">${p.quantidade||''}</td>
         <td class="col-cp">${p.colaborador||''}</td>`;
       tbodyP.appendChild(tr);
     }
 
-    // Ajustar margens depois do conteúdo estar carregado
     setTimeout(ajustarMargens, 150);
   }
 
