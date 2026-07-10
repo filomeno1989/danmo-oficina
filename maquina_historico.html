@@ -12,7 +12,6 @@
     .timeline li { padding:10px 12px; border-left:3px solid var(--amber); margin-bottom:6px; border-radius:0 4px 4px 0; background:rgba(255,255,255,0.03); font-size:13px; }
     .timeline .meta { color:var(--text2); font-size:11px; margin-top:2px; }
     .chart-wrap { position:relative; height:300px; margin-bottom:24px; }
-    .btn-toolbar { display:flex; gap:8px; margin-bottom:16px; }
   </style>
 </head>
 <body>
@@ -25,8 +24,8 @@
         <p class="page-sub" id="subtitulo-equip">—</p>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="imprimirHistorico()">🖨️ Imprimir</button>
-        <button class="btn btn-ghost" onclick="gerarPDF()">📄 Guardar PDF</button>
+        <button class="btn btn-primary" id="btn-imprimir">🖨️ Imprimir</button>
+        <button class="btn btn-ghost" id="btn-pdf">📄 Guardar PDF</button>
         <a href="equipamentos.html" class="btn btn-ghost">← Voltar</a>
       </div>
     </div>
@@ -115,46 +114,53 @@
 
     if (!equipId) { alert('Máquina não especificada.'); window.location.href='equipamentos.html'; }
 
-    let equip = null, todasOS = [], todasIntervencoes = [], todasPecas = [], colabs = [];
+    let equip = null, todasOS = [], todasIntervencoes = [], todasPecas = [], colabs = [], relacoes = [];
 
     async function carregar() {
-      // Equipamento
-      const eqList = await db.query('equipment', `select=*&id=eq.${equipId}`);
-      equip = eqList[0];
-      if (!equip) { alert('Máquina não encontrada.'); window.location.href='equipamentos.html'; return; }
+      try {
+        // Equipamento
+        const eqList = await db.query('equipment', `select=*&id=eq.${equipId}`);
+        equip = eqList[0];
+        if (!equip) { alert('Máquina não encontrada.'); window.location.href='equipamentos.html'; return; }
 
-      document.getElementById('titulo-equip').textContent = equip.code || '—';
-      document.getElementById('subtitulo-equip').textContent = 
-        `${equip.fleet_type||'—'} — ${equip.group_name||'—'} — Adquirido em ${equip.year_acquired||'—'}`;
+        document.getElementById('titulo-equip').textContent = equip.code || '—';
+        document.getElementById('subtitulo-equip').textContent = 
+          `${equip.fleet_type||'—'} — ${equip.group_name||'—'} — Adquirido em ${equip.year_acquired||'—'}`;
 
-      // Todas as OS desta máquina
-      todasOS = await db.query('ordens_servico', `select=*&equipment_id=eq.${equipId}&order=data_abertura.desc`);
+        // Todas as OS desta máquina
+        todasOS = await db.query('ordens_servico', `select=*&equipment_id=eq.${equipId}&order=data_abertura.desc`);
 
-      // Todas as intervenções (vinculadas via os_id)
-      const osIds = todasOS.map(o => o.id);
-      if (osIds.length > 0) {
-        let qIntervencoes = 'select=*&order=shift_date.desc';
-        // Carregar todos e depois filtrar (Supabase não suporta IN direto fácil)
-        const allIntervencoes = await db.query('records', 'select=*&order=shift_date.desc');
-        todasIntervencoes = allIntervencoes.filter(r => osIds.includes(r.os_id));
+        // Colaboradores
+        colabs = await db.query('collaborators', 'select=*&active=eq.true');
+
+        // Record Collaborators (para vincular técnicos a intervenções)
+        relacoes = await db.query('record_collaborators', 'select=*');
+
+        // Todas as intervenções (vinculadas via os_id)
+        if (todasOS.length > 0) {
+          const osIds = todasOS.map(o => o.id);
+          const allIntervencoes = await db.query('records', 'select=*&order=shift_date.desc');
+          todasIntervencoes = allIntervencoes.filter(r => osIds.includes(r.os_id));
+        }
+
+        // Peças
+        if (todasOS.length > 0) {
+          const osIds = todasOS.map(o => o.id);
+          const allPecas = await db.query('os_pecas', 'select=*');
+          todasPecas = allPecas.filter(p => osIds.includes(p.os_id));
+        }
+
+        // Renderizar
+        renderKPIs();
+        renderTimelineOS();
+        await renderIntervencoesTabela();
+        renderPecasSumario();
+        await renderTecnicos();
+        renderGraficoHoras();
+      } catch (err) {
+        console.error('Erro ao carregar:', err);
+        alert('Erro ao carregar dados da máquina');
       }
-
-      // Peças
-      if (osIds.length > 0) {
-        const allPecas = await db.query('os_pecas', 'select=*');
-        todasPecas = allPecas.filter(p => osIds.includes(p.os_id));
-      }
-
-      // Colaboradores
-      colabs = await db.query('collaborators', 'select=*&active=eq.true');
-
-      // Renderizar
-      renderKPIs();
-      renderTimelineOS();
-      renderIntervencoesTabela();
-      renderPecasSumario();
-      renderTecnicos();
-      renderGraficoHoras();
     }
 
     function renderKPIs() {
@@ -187,15 +193,13 @@
       }).join('');
     }
 
-    function renderIntervencoesTabela() {
+    async function renderIntervencoesTabela() {
       const tbody = document.getElementById('tbody-intervencoes');
       if (!todasIntervencoes.length) {
         tbody.innerHTML='<tr><td colspan="6">Nenhuma intervenção registada.</td></tr>';
         return;
       }
 
-      const relacoes = await db.query('record_collaborators', 'select=*').catch(() => []);
-      
       tbody.innerHTML = todasIntervencoes.map(r => {
         const os = todasOS.find(o => o.id === r.os_id) || {};
         const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
@@ -239,10 +243,9 @@
     }
 
     async function renderTecnicos() {
-      const relacoes = await db.query('record_collaborators', 'select=*');
       const tbody = document.getElementById('tbody-tecnicos');
-
       const mapa = {};
+      
       todasIntervencoes.forEach(r => {
         const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
         idsColabs.forEach(id => {
@@ -282,6 +285,11 @@
       const meses = Object.keys(dados).sort();
       const horas = meses.map(m => Math.round(dados[m]*100)/100);
 
+      if (meses.length === 0) {
+        document.getElementById('chartHoras').style.display = 'none';
+        return;
+      }
+
       const ctx = document.getElementById('chartHoras').getContext('2d');
       new Chart(ctx, {
         type: 'line',
@@ -309,13 +317,8 @@
       });
     }
 
-    function imprimirHistorico() {
-      window.print();
-    }
-
-    function gerarPDF() {
-      alert('Funcionalidade de PDF virá em breve.');
-    }
+    document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
+    document.getElementById('btn-pdf').addEventListener('click', () => alert('Funcionalidade de PDF virá em breve.'));
 
     (async function init() {
       await carregar();
