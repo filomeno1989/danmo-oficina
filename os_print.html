@@ -388,18 +388,19 @@
     return mm >= 30 ? hh + 1 : hh;
   }
 
+  // Calcula as margens do bloco central APENAS para impressão.
+  // Não mexe no layout do ecrã — só injeta regras dentro de @media print.
   function ajustarMargens() {
     const topo  = document.getElementById('bloco-topo');
     const fundo = document.getElementById('bloco-fundo');
-    const meio  = document.getElementById('bloco-meio');
-    if (!topo || !fundo || !meio) return;
+    if (!topo || !fundo) return;
     const mt = topo.offsetHeight + 10;
     const mb = fundo.offsetHeight + 10;
-    meio.style.marginTop    = mt + 'px';
-    meio.style.marginBottom = mb + 'px';
     let s = document.getElementById('_pm');
     if (!s) { s = document.createElement('style'); s.id = '_pm'; document.head.appendChild(s); }
-    s.textContent = `@media print { .bloco-meio { margin-top: ${mt}px !important; margin-bottom: ${mb}px !important; } }`;
+    s.textContent = `@media print {
+      .bloco-meio { margin-top: ${mt}px !important; margin-bottom: ${mb}px !important; }
+    }`;
   }
 
   async function carregar() {
@@ -497,6 +498,7 @@
   }
 
   window.addEventListener('resize', ajustarMargens);
+  window.addEventListener('beforeprint', ajustarMargens);
   carregar();
 </script>
 </body>
