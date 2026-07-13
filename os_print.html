@@ -38,13 +38,10 @@
       margin: 0 auto 40px;
       background: #fff;
       box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+      padding: 9mm 12mm 12mm;
     }
 
-    .bloco-topo, .bloco-fundo, .bloco-meio { padding-left: 12mm; padding-right: 12mm; }
-    .bloco-topo { padding-top: 9mm; padding-bottom: 3mm; }
-    .bloco-fundo { padding-bottom: 6mm; }
-
-    /* ══ CABEÇALHO ══ */
+    /* ══ CABEÇALHO (fixo no topo em cada página impressa) ══ */
     .cabecalho {
       display: flex;
       align-items: center;
@@ -55,22 +52,22 @@
     }
 
     .cab-esq { display: flex; align-items: center; gap: 10px; }
-    .cab-esq img { height: 46px; }
-    .empresa-nome { font-size: 13px; font-weight: bold; letter-spacing: .3px; }
-    .empresa-sub { font-size: 9px; color: #555; line-height: 1.5; margin-top: 1px; }
+    .cab-esq img { height: 40px; }
+    .empresa-nome { font-size: 12px; font-weight: bold; letter-spacing: .3px; }
+    .empresa-sub { font-size: 8.5px; color: #555; line-height: 1.5; margin-top: 1px; }
 
     .cab-centro { text-align: center; }
     .doc-tipo {
-      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      font-size: 8.5px; letter-spacing: 2px; text-transform: uppercase;
       color: #4a7c2e; font-weight: bold; margin-bottom: 2px;
     }
-    .doc-titulo { font-size: 20px; font-weight: bold; letter-spacing: .5px; }
+    .doc-titulo { font-size: 18px; font-weight: bold; letter-spacing: .5px; }
 
-    .cab-dir { display: flex; align-items: center; gap: 14px; }
+    .cab-dir { display: flex; align-items: center; gap: 12px; }
     .id-box { text-align: right; }
-    .id-box .lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
-    .id-box .val { font-size: 15px; font-weight: bold; }
-    .cab-dir img { height: 44px; }
+    .id-box .lbl { font-size: 7.5px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
+    .id-box .val { font-size: 14px; font-weight: bold; }
+    .cab-dir img { height: 38px; }
 
     /* ══ PAINEL INFO ══ */
     .painel {
@@ -158,7 +155,7 @@
     /* ══ TABELAS ══ */
     .tabela-obra, .tabela-pecas {
       width: 100%; border-collapse: collapse;
-      font-size: 9.5px; margin-bottom: 8px;
+      font-size: 9.5px; margin-bottom: 10px;
     }
     .tabela-obra caption, .tabela-pecas caption {
       text-align: left; font-size: 9px; font-weight: bold; text-transform: uppercase;
@@ -186,35 +183,49 @@
     .col-qp { width: 10%; text-align:center; } .col-cp { width: 24%; }
 
     /* ══ ASSINATURAS ══ */
-    .assinaturas-wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+    .assinaturas-wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; margin-top: 6px; }
     .ass-box { border: 1px solid #ccc; border-radius: 5px; padding: 8px; text-align: center; min-height: 56px; display:flex; flex-direction:column; justify-content:flex-end; }
     .ass-linha { border-bottom: 1px solid #999; height: 26px; }
     .ass-cargo { font-size: 8px; text-transform: uppercase; letter-spacing: .6px; color: #666; margin-top: 4px; }
     .ass-data { font-size: 8px; color: #999; margin-top: 1px; }
 
-    .emissao-box {
-      font-size: 8px; color: #666; text-align: center; margin-bottom: 8px;
-      border-top: 1px dashed #ccc; padding-top: 5px;
-    }
-    .emissao-box strong { color: #333; }
-
-    /* ══ RODAPÉ LEGAL ══ */
+    /* ══ RODAPÉ LEGAL (fixo no fundo em cada página impressa) ══ */
     .rodape-legal {
       display: flex; justify-content: space-between; align-items: flex-end;
-      border-top: 1px solid #ccc; padding-top: 5px;
+      border-top: 1px solid #ccc; padding-top: 5px; margin-top: 12px;
     }
     .rodape-texto { font-size: 6.8px; color: #777; line-height: 1.5; }
-    .rodape-logo img { height: 24px; }
+    .rodape-logo img { height: 22px; }
 
+    /* ══════════════════════════════
+       PRINT — só cabeçalho de logos e rodapé legal repetem;
+       todo o resto flui naturalmente pelo documento.
+    ══════════════════════════════ */
     @media print {
       body { background: #fff; }
       .btn-bar { display: none !important; }
-      .folha { width: 100%; margin: 0; box-shadow: none; }
-      .bloco-topo { position: fixed; top: 0; left: 0; right: 0; background: #fff; z-index: 100; padding: 6mm 10mm 2mm; }
-      .bloco-fundo { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; z-index: 100; padding: 0 10mm 5mm; }
-      .bloco-meio { padding: 0 10mm; }
+      .folha { width: 100%; margin: 0; box-shadow: none; padding: 0; }
+
+      .cabecalho {
+        position: fixed; top: 0; left: 0; right: 0;
+        background: #fff; padding: 8mm 10mm 4px;
+        margin-bottom: 0;
+      }
+      .rodape-legal {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: #fff; padding: 3px 10mm 6mm;
+        margin-top: 0;
+      }
+
+      .conteudo {
+        margin-top: 26mm;   /* espaço para o cabeçalho fixo */
+        margin-bottom: 16mm; /* espaço para o rodapé fixo */
+        padding: 0 10mm;
+      }
+
       @page { size: A4; margin: 0; }
       .tabela-obra tbody tr { page-break-inside: avoid; }
+      .assinaturas-wrap { page-break-inside: avoid; }
     }
   </style>
 </head>
@@ -226,31 +237,32 @@
 
 <div class="folha">
 
-  <div class="bloco-topo" id="bloco-topo">
-    <div class="cabecalho">
-      <div class="cab-esq">
-        <img src="DANMO.png" alt="Danmo" />
-        <div>
-          <div class="empresa-nome">Danmo Service System, Lda</div>
-          <div class="empresa-sub">Porto da Beira · Nuit: 400024022</div>
-        </div>
-      </div>
-      <div class="cab-centro">
-        <div class="doc-tipo">Documento Técnico</div>
-        <div class="doc-titulo">Ordem de Reparação</div>
-      </div>
-      <div class="cab-dir">
-        <div class="id-box">
-          <div class="lbl">Nº Ordem</div>
-          <div class="val" id="p-nr-ordem">—</div>
-        </div>
-        <div class="id-box">
-          <div class="lbl">Data</div>
-          <div class="val" id="p-data">—</div>
-        </div>
-        <img src="MMM.png" alt="Made in Mozambique" />
+  <div class="cabecalho">
+    <div class="cab-esq">
+      <img src="DANMO.png" alt="Danmo" />
+      <div>
+        <div class="empresa-nome">Danmo Service System, Lda</div>
+        <div class="empresa-sub">Porto da Beira · Nuit: 400024022</div>
       </div>
     </div>
+    <div class="cab-centro">
+      <div class="doc-tipo">Documento Técnico</div>
+      <div class="doc-titulo">Ordem de Reparação</div>
+    </div>
+    <div class="cab-dir">
+      <div class="id-box">
+        <div class="lbl">Nº Ordem</div>
+        <div class="val" id="p-nr-ordem">—</div>
+      </div>
+      <div class="id-box">
+        <div class="lbl">Data</div>
+        <div class="val" id="p-data">—</div>
+      </div>
+      <img src="MMM.png" alt="Made in Mozambique" />
+    </div>
+  </div>
+
+  <div class="conteudo">
 
     <div class="painel">
       <div class="info-block">
@@ -296,9 +308,7 @@
       <div class="cb-item"><span class="cb" id="cb-tor"></span>Torneiro</div>
       <div class="cb-item"><span class="cb" id="cb-out"></span>Outro</div>
     </div>
-  </div>
 
-  <div class="bloco-meio" id="bloco-meio">
     <table class="tabela-obra">
       <caption>Descrição da Mão de Obra</caption>
       <thead>
@@ -319,9 +329,7 @@
         </tr>
       </tfoot>
     </table>
-  </div>
 
-  <div class="bloco-fundo" id="bloco-fundo">
     <table class="tabela-pecas">
       <caption>Peças Aplicadas</caption>
       <thead>
@@ -342,18 +350,15 @@
       <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Cliente (CdM)</div><div class="ass-data">Data: ___/___/_____</div></div>
     </div>
 
-    <div class="emissao-box">
-      Documento emitido eletronicamente por <strong>Filomeno Manuel Joaquim Alexandre</strong> — Assistente Administrativo — <span id="p-emissao-data"></span>
-    </div>
+  </div>
 
-    <div class="rodape-legal">
-      <div class="rodape-texto">
-        Código: DAN_ADO_FR_023_REV03_06.06.25<br/>
-        Este documento é propriedade da DANMO. Não é permitida sua reprodução sem autorização.<br/>
-        Depois de impresso este documento é considerado cópia não controlado
-      </div>
-      <div class="rodape-logo"><img src="MESQUITA.png" alt="Grupo Mesquita" /></div>
+  <div class="rodape-legal">
+    <div class="rodape-texto">
+      Código: DAN_ADO_FR_023_REV03_06.06.25<br/>
+      Este documento é propriedade da DANMO. Não é permitida sua reprodução sem autorização.<br/>
+      Depois de impresso este documento é considerado cópia não controlado
     </div>
+    <div class="rodape-logo"><img src="MESQUITA.png" alt="Grupo Mesquita" /></div>
   </div>
 
 </div>
@@ -388,21 +393,6 @@
     return mm >= 30 ? hh + 1 : hh;
   }
 
-  // Calcula as margens do bloco central APENAS para impressão.
-  // Não mexe no layout do ecrã — só injeta regras dentro de @media print.
-  function ajustarMargens() {
-    const topo  = document.getElementById('bloco-topo');
-    const fundo = document.getElementById('bloco-fundo');
-    if (!topo || !fundo) return;
-    const mt = topo.offsetHeight + 10;
-    const mb = fundo.offsetHeight + 10;
-    let s = document.getElementById('_pm');
-    if (!s) { s = document.createElement('style'); s.id = '_pm'; document.head.appendChild(s); }
-    s.textContent = `@media print {
-      .bloco-meio { margin-top: ${mt}px !important; margin-bottom: ${mb}px !important; }
-    }`;
-  }
-
   async function carregar() {
     const osList = await db.query('ordens_servico', `select=*&id=eq.${osId}`);
     const os = osList[0];
@@ -420,9 +410,6 @@
     document.getElementById('p-data-abertura').textContent = fData(os.data_abertura);
     document.getElementById('p-diagnostico').textContent  = os.descricao_avaria || '—';
     document.getElementById('p-aberto-por').textContent   = os.aberto_por || '—';
-
-    const hoje = new Date();
-    document.getElementById('p-emissao-data').textContent = hoje.toLocaleDateString('pt-PT', { day:'2-digit', month:'long', year:'numeric' });
 
     const mapaTipo = {
       'Inspeção Geral':'cb-ig','Reparação Pneus':'cb-rp','Lubrificação':'cb-lb',
@@ -493,12 +480,8 @@
         <td class="col-cp">${p.colaborador||''}</td>`;
       tbodyP.appendChild(tr);
     }
-
-    setTimeout(ajustarMargens, 150);
   }
 
-  window.addEventListener('resize', ajustarMargens);
-  window.addEventListener('beforeprint', ajustarMargens);
   carregar();
 </script>
 </body>
