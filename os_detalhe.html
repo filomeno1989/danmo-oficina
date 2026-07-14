@@ -278,12 +278,31 @@
   <div class="modal-overlay" id="modal-peca">
     <div class="modal-box">
       <div class="card-title">Adicionar Peça Aplicada</div>
-      <form id="form-peca">
+<form id="form-peca">
         <input type="hidden" id="p-id" />
-        <div class="form-group mt-16">
+
+        <div class="form-group mt-16" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="p-usar-stock" style="width:auto" />
+          <label for="p-usar-stock" style="margin:0;text-transform:none;font-weight:normal;cursor:pointer">
+            Material da Danmo (retirar do Stock)
+          </label>
+        </div>
+
+        <div class="form-group mt-16" id="p-peca-texto-wrap">
           <label>Peça / Material *</label>
           <input type="text" id="p-peca" required placeholder="Ex: Correia de comando, Terminal de encaixe..." />
         </div>
+
+        <div class="form-group mt-16" id="p-peca-select-wrap" style="display:none">
+          <label>Material do Stock *</label>
+          <select id="p-material-stock">
+            <option value="">— Selecionar material —</option>
+          </select>
+          <span class="nota" style="font-size:11px;color:var(--text2);font-style:italic">
+            Ao guardar, cria automaticamente uma saída pendente no Stock DSS.
+          </span>
+        </div>
+
         <div class="form-grid mt-16">
           <div class="form-group">
             <label>Data de Aplicação</label>
@@ -317,7 +336,8 @@
     const params = new URLSearchParams(window.location.search);
     const osId = params.get('id');
     let osAtual = null, equipAtual = null, collaboradoresAtivos = [];
-    let selecionadosIntervencao = []; // [{id, name, code, setor}]
+    let selecionadosIntervencao = [];
+    let materiaisStock = []; // [{id, name, code, setor}]
 
     if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
 
@@ -402,7 +422,22 @@
         selPeca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
       });
     }
+async function carregarMateriaisStock() {
+      materiaisStock = await db.query('materiais', 'select=*&ativo=eq.true&order=nome.asc');
+      const sel = document.getElementById('p-material-stock');
+      materiaisStock.forEach(m => {
+        sel.insertAdjacentHTML('beforeend',
+          `<option value="${m.id}">${m.nome}${m.referencia?' ('+m.referencia+')':''} — ${m.unidade||'Und'}</option>`);
+      });
+    }
 
+    document.getElementById('p-usar-stock').addEventListener('change', e => {
+      const usaStock = e.target.checked;
+      document.getElementById('p-peca-texto-wrap').style.display = usaStock ? 'none' : 'block';
+      document.getElementById('p-peca-select-wrap').style.display = usaStock ? 'block' : 'none';
+      document.getElementById('p-peca').required = !usaStock;
+      document.getElementById('p-material-stock').required = usaStock;
+    });
     // ── Pesquisa de técnicos (intervenção) ──
     function filtrarTecnicos(q) {
       const dd = document.getElementById('i-tech-dropdown');
@@ -660,6 +695,11 @@
       document.getElementById('p-id').value = '';
       document.getElementById('p-data').value = dataHoje();
       document.getElementById('p-qtd').value = 1;
+      document.getElementById('p-usar-stock').checked = false;
+      document.getElementById('p-peca-texto-wrap').style.display = 'block';
+      document.getElementById('p-peca-select-wrap').style.display = 'none';
+      document.getElementById('p-peca').required = true;
+      document.getElementById('p-material-stock').required = false;
       pecasCache = [];
       modalPeca.classList.add('aberto');
     });
@@ -668,19 +708,62 @@
     document.getElementById('form-peca').addEventListener('submit', async ev => {
       ev.preventDefault();
       const id = document.getElementById('p-id').value;
-      const payload = {
-        os_id:       parseInt(osId),
-        peca:        document.getElementById('p-peca').value.trim(),
-        data:        document.getElementById('p-data').value || null,
-        quantidade:  parseFloat(document.getElementById('p-qtd').value)||1,
-        colaborador: document.getElementById('p-colaborador').value || null,
-      };
+      const usaStock = document.getElementById('p-usar-stock').checked;
+      const qtd = parseFloat(document.getElementById('p-qtd').value) || 1;
+      const dataAplicacao = document.getElementById('p-data').value || null;
+      const colaboradorNome = document.getElementById('p-colaborador').value || null;
+
       try {
+        let payload;
+
+        if (usaStock) {
+          const materialId = document.getElementById('p-material-stock').value;
+          if (!materialId) { alert('Selecione um material do Stock.'); return; }
+          const material = materiaisStock.find(m => m.id === materialId);
+
+          // Criar movimento de saída pendente no Stock
+          const movimento = await db.insert('stock_movimentos', {
+            tipo: 'saida',
+            estado: 'pendente',
+            material_id: materialId,
+            quantidade: qtd,
+            data_movimento: dataAplicacao || dataHoje(),
+            departamento: 'Oficina',
+            finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} — ${equipAtual ? equipAtual.code : ''}`,
+            colaborador_nome: colaboradorNome || '',
+            observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
+          });
+          const movId = Array.isArray(movimento) ? movimento[0].id : movimento.id;
+
+          payload = {
+            os_id: parseInt(osId),
+            peca: material ? material.nome : 'Material do Stock',
+            data: dataAplicacao,
+            quantidade: qtd,
+            colaborador: colaboradorNome,
+            material_id: materialId,
+            stock_movimento_id: movId,
+          };
+        } else {
+          payload = {
+            os_id:       parseInt(osId),
+            peca:        document.getElementById('p-peca').value.trim(),
+            data:        dataAplicacao,
+            quantidade:  qtd,
+            colaborador: colaboradorNome,
+            material_id: null,
+            stock_movimento_id: null,
+          };
+        }
+
         if (id) await db.update('os_pecas', id, payload);
         else    await db.insert('os_pecas', payload);
+
         pecasCache = [];
         modalPeca.classList.remove('aberto');
         await carregarPecas();
+
+        if (usaStock) mostrarToast('Peça registada e saída pendente criada no Stock.');
       } catch(err) {
         alert('Erro ao guardar peça: '+(err.message||err));
       }
@@ -688,6 +771,7 @@
 
     (async function init() {
       await carregarTecnicosBase();
+      await carregarMateriaisStock();
       await carregarOS();
       await carregarTimeline();
       await carregarIntervencoes();
