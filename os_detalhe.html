@@ -13,9 +13,6 @@
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:200; }
     .modal-overlay.aberto { display:flex; }
     .modal-box { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:520px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
-    .checklist { max-height:180px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; padding:8px; }
-    .checklist label { display:flex; align-items:center; gap:8px; font-weight:normal; text-transform:none; margin:4px 0; color:var(--text); cursor:pointer; }
-    .checklist input[type=checkbox] { width:auto; }
     .info-box { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:12px; font-size:14px; }
     .info-box .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
     .tipo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:6px; margin-top:8px; }
@@ -23,18 +20,32 @@
     .tipo-grid input[type=checkbox] { width:auto; }
     .chips-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
     .chip { background:rgba(245,158,11,0.15); color:var(--amber); border-radius:20px; padding:2px 10px; font-size:12px; }
+    .chip-tech { background:rgba(59,130,246,0.15); color:var(--blue); border-radius:20px; padding:3px 10px 3px 12px; font-size:12px; display:flex; align-items:center; gap:6px; }
+    .chip-tech button { background:none; border:none; color:var(--blue); cursor:pointer; font-size:14px; line-height:1; padding:0; }
     .tecnicos-stack { display:flex; flex-direction:column; gap:2px; }
     .tecnicos-stack span { font-size:12px; }
+    .tech-search-wrap { position:relative; }
+    .tech-dropdown {
+      position:absolute; top:100%; left:0; right:0; background:var(--navy3);
+      border:1px solid var(--border); border-radius:6px; z-index:50;
+      max-height:180px; overflow-y:auto; display:none; margin-top:2px;
+    }
+    .tech-dropdown.open { display:block; }
+    .tech-option { padding:8px 12px; font-size:13px; cursor:pointer; }
+    .tech-option:hover { background:var(--navy2); }
+    .edit-btn { padding:2px 10px; font-size:11px; }
   </style>
 </head>
 <body>
-  <div class="flex-between mt-16">
-  <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra —</h1>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
-    <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
-  </div>
-</div>
+  <div id="navbar" class="navbar"></div>
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0" id="titulo-os">Obra —</h1>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
+        <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
+      </div>
+    </div>
 
     <!-- KPIs -->
     <div class="kpi-grid mt-24">
@@ -51,20 +62,65 @@
     <!-- Info da OS -->
     <div class="card">
       <div class="info-box">
-        <div class="label">Avaria / Motivo de entrada</div>
+        <div class="flex-between" style="margin-bottom:4px">
+          <div class="label" style="margin-bottom:0">Avaria / Motivo de entrada</div>
+          <button class="btn btn-ghost edit-btn" id="btn-editar-avaria">Editar</button>
+        </div>
         <div id="info-avaria">—</div>
-      </div>
-      <div id="info-tipo-wrap" style="display:none">
-        <div class="info-box">
-          <div class="label">Tipo de Intervenção</div>
-          <div class="chips-wrap" id="info-tipo-chips"></div>
+        <div id="edit-avaria-wrap" style="display:none;margin-top:8px">
+          <textarea id="edit-avaria-txt" rows="3" style="width:100%"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" id="btn-cancelar-avaria">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btn-guardar-avaria">Guardar</button>
+          </div>
         </div>
       </div>
+
+      <div class="info-box">
+        <div class="flex-between" style="margin-bottom:4px">
+          <div class="label" style="margin-bottom:0">Tipo de Intervenção</div>
+          <button class="btn btn-ghost edit-btn" id="btn-editar-tipo">Adicionar / Editar</button>
+        </div>
+        <div class="chips-wrap" id="info-tipo-chips"><span class="text-muted" style="font-size:12px">Nenhum tipo definido.</span></div>
+        <div id="edit-tipo-wrap" style="display:none;margin-top:10px">
+          <div class="tipo-grid" id="edit-tipo-grid">
+            <label><input type="checkbox" value="Inspeção Geral" /> Inspeção Geral</label>
+            <label><input type="checkbox" value="Reparação Pneus" /> Reparação Pneus</label>
+            <label><input type="checkbox" value="Lubrificação" /> Lubrificação</label>
+            <label><input type="checkbox" value="Rep. Sis. Mecânico" /> Rep. Sis. Mecânico</label>
+            <label><input type="checkbox" value="Rep. Sis. Hidráulico" /> Rep. Sis. Hidráulico</label>
+            <label><input type="checkbox" value="Rep. Sis. Elétrico" /> Rep. Sis. Elétrico</label>
+            <label><input type="checkbox" value="Revisão" /> Revisão</label>
+            <label><input type="checkbox" value="Rep. Estrutura" /> Rep. Estrutura</label>
+            <label><input type="checkbox" value="Outros" /> Outros</label>
+          </div>
+          <p class="nota" style="font-size:11px;color:var(--text2);font-style:italic;margin-top:6px">
+            Adiciona novos tipos se, durante o trabalho, surgirem outras necessidades (ex: entrou para lubrificação e encontraram pneu danificado).
+          </p>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" id="btn-cancelar-tipo">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btn-guardar-tipo">Guardar</button>
+          </div>
+        </div>
+      </div>
+
       <div id="info-observacoes-wrap" style="display:none">
         <div class="info-box">
           <div class="label">Observações</div>
           <div id="info-observacoes">—</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Checklist / Guia de Verificação (aparece quando Revisão está marcada) -->
+    <div class="card" id="card-checklist" style="display:none">
+      <div class="card-title">Guia de Verificação (CdM)</div>
+      <p class="text-muted" style="font-size:12px;margin-bottom:10px">
+        Aguardando o checklist oficial da CdM para integração completa. Campo disponível entretanto para notas e verificações manuais.
+      </p>
+      <textarea id="checklist-texto" rows="4" style="width:100%" placeholder="Notas de verificação, itens conferidos, observações da revisão..."></textarea>
+      <div style="text-align:right;margin-top:8px">
+        <button class="btn btn-primary btn-sm" id="btn-guardar-checklist">Guardar Notas</button>
       </div>
     </div>
 
@@ -204,7 +260,11 @@
         </div>
         <div class="form-group mt-16">
           <label>Técnicos Envolvidos</label>
-          <div class="checklist" id="i-tecnicos-lista"></div>
+          <div class="tech-search-wrap">
+            <input type="text" id="i-tech-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+            <div class="tech-dropdown" id="i-tech-dropdown"></div>
+          </div>
+          <div class="chips-wrap" id="i-tech-chips"></div>
         </div>
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-intervencao">Cancelar</button>
@@ -257,10 +317,10 @@
     const params = new URLSearchParams(window.location.search);
     const osId = params.get('id');
     let osAtual = null, equipAtual = null, collaboradoresAtivos = [];
+    let selecionadosIntervencao = []; // [{id, name, code, setor}]
 
     if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
 
-    // Arredondamento CdM: <30min = arredonda para baixo, >=30min = arredonda para cima
     function arredondarHoras(horasDecimal) {
       const horas = Math.floor(horasDecimal);
       const minutos = (horasDecimal - horas) * 60;
@@ -287,11 +347,19 @@
       document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
       document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
 
+      // Tipos de intervenção — chips
+      const chipsWrap = document.getElementById('info-tipo-chips');
       if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
-        document.getElementById('info-tipo-wrap').style.display = 'block';
-        document.getElementById('info-tipo-chips').innerHTML =
-          osAtual.tipo_intervencao.map(t => `<span class="chip">${t}</span>`).join('');
+        chipsWrap.innerHTML = osAtual.tipo_intervencao.map(t => `<span class="chip">${t}</span>`).join('');
+      } else {
+        chipsWrap.innerHTML = '<span class="text-muted" style="font-size:12px">Nenhum tipo definido.</span>';
       }
+
+      // Checklist — mostrar se "Revisão" estiver entre os tipos
+      const temRevisao = (osAtual.tipo_intervencao || []).includes('Revisão');
+      document.getElementById('card-checklist').style.display = temRevisao ? 'block' : 'none';
+      document.getElementById('checklist-texto').value = osAtual.checklist_info || '';
+
       if (osAtual.observacoes) {
         document.getElementById('info-observacoes').textContent = osAtual.observacoes;
         document.getElementById('info-observacoes-wrap').style.display = 'block';
@@ -303,7 +371,6 @@
     }
 
     async function carregarTimeline() {
-      // Histórico de estado da obra
       const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
       const ord = [...log].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
       document.getElementById('lista-timeline').innerHTML = ord.length === 0
@@ -314,7 +381,6 @@
             <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : ''}${formatarDataHora(ev.data_mudanca)}</div>
           </li>`).join('');
 
-      // Histórico de estado físico
       const logFisico = await db.query('os_status_fisico_log', `select=*&os_id=eq.${osId}`);
       const ordFisico = [...logFisico].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
       document.getElementById('lista-timeline-fisico').innerHTML = ordFisico.length === 0
@@ -325,7 +391,7 @@
           </li>`).join('');
     }
 
-    async function carregarTecnicosCheckbox() {
+    async function carregarTecnicosBase() {
       collaboradoresAtivos = await db.query('collaborators','select=id,name,setor,code&active=eq.true&order=name.asc');
 
       const selResp = document.getElementById('responsavel-mudanca');
@@ -335,13 +401,49 @@
         selResp.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
         selPeca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
       });
-
-      document.getElementById('i-tecnicos-lista').innerHTML = collaboradoresAtivos
-        .map(c => `<label>
-          <input type="checkbox" value="${c.id}" data-setor="${c.setor||''}" data-code="${c.code||''}" />
-          ${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}
-        </label>`).join('');
     }
+
+    // ── Pesquisa de técnicos (intervenção) ──
+    function filtrarTecnicos(q) {
+      const dd = document.getElementById('i-tech-dropdown');
+      q = q.toLowerCase().trim();
+      if (!q) { dd.classList.remove('open'); dd.innerHTML=''; return; }
+      const jaSelecionados = selecionadosIntervencao.map(t => t.id);
+      const matches = collaboradoresAtivos.filter(c =>
+        !jaSelecionados.includes(c.id) &&
+        (c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q))
+      );
+      if (!matches.length) { dd.classList.remove('open'); dd.innerHTML='<div class="tech-option text-muted">Nenhum resultado.</div>'; dd.classList.add('open'); return; }
+      dd.innerHTML = matches.map(c =>
+        `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`
+      ).join('');
+      dd.classList.add('open');
+    }
+
+    document.getElementById('i-tech-search').addEventListener('input', e => filtrarTecnicos(e.target.value));
+    document.getElementById('i-tech-dropdown').addEventListener('click', e => {
+      const opt = e.target.closest('.tech-option');
+      if (!opt || !opt.dataset.id) return;
+      const c = collaboradoresAtivos.find(x => String(x.id) === opt.dataset.id);
+      if (c && !selecionadosIntervencao.find(t => t.id === c.id)) {
+        selecionadosIntervencao.push(c);
+        renderChipsTecnicos();
+      }
+      document.getElementById('i-tech-search').value = '';
+      document.getElementById('i-tech-dropdown').classList.remove('open');
+    });
+
+    function renderChipsTecnicos() {
+      document.getElementById('i-tech-chips').innerHTML = selecionadosIntervencao.map(c =>
+        `<span class="chip-tech">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">✕</button></span>`
+      ).join('');
+    }
+    document.getElementById('i-tech-chips').addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      selecionadosIntervencao = selecionadosIntervencao.filter(c => String(c.id) !== btn.dataset.id);
+      renderChipsTecnicos();
+    });
 
     async function carregarIntervencoes() {
       const records = await db.query('records', `select=*&os_id=eq.${osId}&order=shift_date.asc,time_start.asc`);
@@ -432,6 +534,49 @@
       document.getElementById('modal-peca').classList.add('aberto');
     }
 
+    // ── Editar Avaria ──
+    document.getElementById('btn-editar-avaria').addEventListener('click', () => {
+      document.getElementById('edit-avaria-txt').value = osAtual.descricao_avaria || '';
+      document.getElementById('edit-avaria-wrap').style.display = 'block';
+    });
+    document.getElementById('btn-cancelar-avaria').addEventListener('click', () => {
+      document.getElementById('edit-avaria-wrap').style.display = 'none';
+    });
+    document.getElementById('btn-guardar-avaria').addEventListener('click', async () => {
+      const novoTexto = document.getElementById('edit-avaria-txt').value.trim();
+      await db.update('ordens_servico', osId, { descricao_avaria: novoTexto, atualizado_em: new Date().toISOString() });
+      document.getElementById('edit-avaria-wrap').style.display = 'none';
+      await carregarOS();
+    });
+
+    // ── Editar Tipo de Intervenção ──
+    document.getElementById('btn-editar-tipo').addEventListener('click', () => {
+      const atuais = osAtual.tipo_intervencao || [];
+      document.querySelectorAll('#edit-tipo-grid input[type=checkbox]').forEach(cb => {
+        cb.checked = atuais.includes(cb.value);
+      });
+      document.getElementById('edit-tipo-wrap').style.display = 'block';
+    });
+    document.getElementById('btn-cancelar-tipo').addEventListener('click', () => {
+      document.getElementById('edit-tipo-wrap').style.display = 'none';
+    });
+    document.getElementById('btn-guardar-tipo').addEventListener('click', async () => {
+      const selecionados = Array.from(
+        document.querySelectorAll('#edit-tipo-grid input[type=checkbox]:checked')
+      ).map(cb => cb.value);
+      await db.update('ordens_servico', osId, { tipo_intervencao: selecionados.length ? selecionados : null, atualizado_em: new Date().toISOString() });
+      document.getElementById('edit-tipo-wrap').style.display = 'none';
+      await carregarOS();
+    });
+
+    // ── Guardar Checklist ──
+    document.getElementById('btn-guardar-checklist').addEventListener('click', async () => {
+      const texto = document.getElementById('checklist-texto').value.trim();
+      await db.update('ordens_servico', osId, { checklist_info: texto || null });
+      mostrarToast('Notas guardadas.');
+      osAtual.checklist_info = texto;
+    });
+
     // Atualizar estado da obra
     document.getElementById('btn-mudar-status').addEventListener('click', async () => {
       const novoStatus  = document.getElementById('sel-novo-status').value;
@@ -447,14 +592,12 @@
       await carregarOS(); await carregarTimeline();
     });
 
-    // Atualizar estado físico — regista histórico automático
     document.getElementById('btn-atualizar-fisico').addEventListener('click', async () => {
       const novoFisico = document.getElementById('sel-status-fisico').value;
       const upd = { status_fisico: novoFisico, atualizado_em: new Date().toISOString() };
       const nrObra = document.getElementById('campo-numero-obra').value.trim();
       if (nrObra) upd.numero_obra = nrObra;
       await db.update('ordens_servico', osId, upd);
-      // Só regista no histórico se o estado físico mudou
       if (novoFisico !== osAtual.status_fisico) {
         await db.insert('os_status_fisico_log', { os_id: osId, status_fisico: novoFisico });
       }
@@ -466,7 +609,8 @@
     document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
       document.getElementById('form-intervencao').reset();
       document.getElementById('i-data').value = dataHoje();
-      document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]').forEach(cb => cb.checked = false);
+      selecionadosIntervencao = [];
+      renderChipsTecnicos();
       modalIntervencao.classList.add('aberto');
     });
     document.getElementById('btn-cancelar-intervencao').addEventListener('click', () => modalIntervencao.classList.remove('aberto'));
@@ -479,7 +623,6 @@
       const [h2,m2] = fim.split(':').map(Number);
       let horasDecimal = (h2+m2/60)-(h1+m1/60);
       if (horasDecimal < 0) horasDecimal += 24;
-      // Arredondamento CdM
       const horasArredondadas = arredondarHoras(horasDecimal);
 
       const payload = {
@@ -498,14 +641,12 @@
         const novo = await db.insert('records', payload);
         if (novo && novo.code) throw new Error(novo.message||'Erro');
         const recordId = Array.isArray(novo) ? novo[0].id : novo.id;
-        const selecionados = Array.from(
-          document.querySelectorAll('#i-tecnicos-lista input[type=checkbox]:checked')
-        ).map(el => el.value);
-        for (const cId of selecionados) {
-          await db.insert('record_collaborators', { record_id: recordId, collaborator_id: parseInt(cId) });
+        for (const c of selecionadosIntervencao) {
+          await db.insert('record_collaborators', { record_id: recordId, collaborator_id: c.id });
         }
         modalIntervencao.classList.remove('aberto');
         document.getElementById('form-intervencao').reset();
+        selecionadosIntervencao = [];
         await carregarIntervencoes();
       } catch(err) {
         alert('Erro ao guardar a intervenção: '+(err.message||err));
@@ -546,7 +687,7 @@
     });
 
     (async function init() {
-      await carregarTecnicosCheckbox();
+      await carregarTecnicosBase();
       await carregarOS();
       await carregarTimeline();
       await carregarIntervencoes();
