@@ -185,7 +185,7 @@
     /* ══ ASSINATURAS ══ */
     .assinaturas-wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; margin-top: 6px; }
     .ass-box { border: 1px solid #ccc; border-radius: 5px; padding: 8px; text-align: center; min-height: 56px; display:flex; flex-direction:column; justify-content:flex-end; }
-    .ass-linha { border-bottom: 1px solid #999; height: 26px; }
+    .ass-linha { border-bottom: 1px solid #999; height: 26px; font-size: 10px; font-style: italic; display:flex; align-items:flex-end; justify-content:center; padding-bottom:2px; color:#333; }
     .ass-cargo { font-size: 8px; text-transform: uppercase; letter-spacing: .6px; color: #666; margin-top: 4px; }
     .ass-data { font-size: 8px; color: #999; margin-top: 1px; }
 
@@ -343,10 +343,10 @@
       <tbody id="tbody-pecas"></tbody>
     </table>
 
-    <div class="assinaturas-wrap">
-      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Responsável Abertura</div><div class="ass-data">Data: ___/___/_____</div></div>
-      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Supervisor</div><div class="ass-data">Data: ___/___/_____</div></div>
-      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Chefe da Oficina</div><div class="ass-data">Data: ___/___/_____</div></div>
+   <div class="assinaturas-wrap">
+      <div class="ass-box"><div class="ass-linha" id="ass-abertura-nome"></div><div class="ass-cargo">Responsável Abertura</div><div class="ass-data" id="ass-abertura-data">Data: ___/___/_____</div></div>
+      <div class="ass-box"><div class="ass-linha" id="ass-supervisor-nome"></div><div class="ass-cargo">Supervisor</div><div class="ass-data" id="ass-supervisor-data">Data: ___/___/_____</div></div>
+      <div class="ass-box"><div class="ass-linha" id="ass-chefe-nome"></div><div class="ass-cargo">Chefe da Oficina</div><div class="ass-data" id="ass-chefe-data">Data: ___/___/_____</div></div>
       <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Cliente (CdM)</div><div class="ass-data">Data: ___/___/_____</div></div>
     </div>
 
@@ -467,6 +467,20 @@
     }
     document.getElementById('p-total-horas').textContent = totalHoras > 0 ? totalHoras+'h' : '';
 
+    // ── Assinaturas automáticas a partir do histórico de workflow ──
+    const statusLog = await db.query('os_status_log', `select=*&os_id=eq.${osId}&order=data_mudanca.asc`);
+
+    function preencherAssinatura(statusAlvo, idNome, idData) {
+      const evento = statusLog.find(ev => ev.status_novo === statusAlvo);
+      if (evento && evento.responsavel) {
+        document.getElementById(idNome).textContent = evento.responsavel;
+        document.getElementById(idData).textContent = 'Data: ' + fData(evento.data_mudanca.split('T')[0]);
+      }
+    }
+
+    preencherAssinatura('Supervisão', 'ass-abertura-nome', 'ass-abertura-data');
+    preencherAssinatura('Chefe da Oficina', 'ass-supervisor-nome', 'ass-supervisor-data');
+    preencherAssinatura('Departamento Técnico', 'ass-chefe-nome', 'ass-chefe-data');
     const pecas  = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
     const tbodyP = document.getElementById('tbody-pecas');
     tbodyP.innerHTML = '';
