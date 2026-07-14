@@ -34,6 +34,11 @@
     .tech-option { padding:8px 12px; font-size:13px; cursor:pointer; }
     .tech-option:hover { background:var(--navy2); }
     .edit-btn { padding:2px 10px; font-size:11px; }
+    .modo-badge {
+      font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+      padding:3px 10px; border-radius:20px; background:rgba(59,130,246,.15); color:var(--blue);
+      display:inline-block; margin-bottom:12px;
+    }
   </style>
 </head>
 <body>
@@ -112,7 +117,7 @@
       </div>
     </div>
 
-    <!-- Checklist / Guia de Verificação (aparece quando Revisão está marcada) -->
+    <!-- Checklist / Guia de Verificação -->
     <div class="card" id="card-checklist" style="display:none">
       <div class="card-title">Guia de Verificação (CdM)</div>
       <p class="text-muted" style="font-size:12px;margin-bottom:10px">
@@ -231,8 +236,10 @@
   <!-- Modal Intervenção -->
   <div class="modal-overlay" id="modal-intervencao">
     <div class="modal-box">
-      <div class="card-title">Registar Intervenção</div>
+      <div class="card-title" id="titulo-modal-intervencao">Registar Intervenção</div>
+      <span class="modo-badge" id="badge-edicao" style="display:none">Modo Edição</span>
       <form id="form-intervencao">
+        <input type="hidden" id="i-record-id" />
         <div class="form-group mt-16">
           <label>Data *</label>
           <input type="date" id="i-data" required />
@@ -268,7 +275,7 @@
         </div>
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-intervencao">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-intervencao">Guardar</button>
         </div>
       </form>
     </div>
@@ -278,7 +285,7 @@
   <div class="modal-overlay" id="modal-peca">
     <div class="modal-box">
       <div class="card-title">Adicionar Peça Aplicada</div>
-<form id="form-peca">
+      <form id="form-peca">
         <input type="hidden" id="p-id" />
 
         <div class="form-group mt-16" style="display:flex;align-items:center;gap:8px">
@@ -336,8 +343,9 @@
     const params = new URLSearchParams(window.location.search);
     const osId = params.get('id');
     let osAtual = null, equipAtual = null, collaboradoresAtivos = [];
-    let selecionadosIntervencao = [];
-    let materiaisStock = []; // [{id, name, code, setor}]
+    let selecionadosIntervencao = []; // [{id, name, code, setor}]
+    let materiaisStock = [];
+    let editandoRecordId = null; // null = criação | id = edição
 
     if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
 
@@ -367,7 +375,6 @@
       document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
       document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
 
-      // Tipos de intervenção — chips
       const chipsWrap = document.getElementById('info-tipo-chips');
       if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
         chipsWrap.innerHTML = osAtual.tipo_intervencao.map(t => `<span class="chip">${t}</span>`).join('');
@@ -375,7 +382,6 @@
         chipsWrap.innerHTML = '<span class="text-muted" style="font-size:12px">Nenhum tipo definido.</span>';
       }
 
-      // Checklist — mostrar se "Revisão" estiver entre os tipos
       const temRevisao = (osAtual.tipo_intervencao || []).includes('Revisão');
       document.getElementById('card-checklist').style.display = temRevisao ? 'block' : 'none';
       document.getElementById('checklist-texto').value = osAtual.checklist_info || '';
@@ -422,7 +428,8 @@
         selPeca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
       });
     }
-async function carregarMateriaisStock() {
+
+    async function carregarMateriaisStock() {
       materiaisStock = await db.query('materiais', 'select=*&ativo=eq.true&order=nome.asc');
       const sel = document.getElementById('p-material-stock');
       materiaisStock.forEach(m => {
@@ -438,6 +445,7 @@ async function carregarMateriaisStock() {
       document.getElementById('p-peca').required = !usaStock;
       document.getElementById('p-material-stock').required = usaStock;
     });
+
     // ── Pesquisa de técnicos (intervenção) ──
     function filtrarTecnicos(q) {
       const dd = document.getElementById('i-tech-dropdown');
@@ -520,7 +528,10 @@ async function carregarMateriaisStock() {
           <td><div class="tecnicos-stack">${setores.map(s=>`<span>${s}</span>`).join('')||'—'}</div></td>
           <td>${r.description||'—'}</td>
           <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
-          <td><button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button></td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="editarIntervencao(${r.id})" style="margin-right:4px">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarIntervencao(${r.id})">Apagar</button>
+          </td>
         </tr>`;
       }).join('');
 
@@ -567,6 +578,38 @@ async function carregarMateriaisStock() {
       document.getElementById('p-qtd').value       = p.quantidade || 1;
       document.getElementById('p-colaborador').value = p.colaborador || '';
       document.getElementById('modal-peca').classList.add('aberto');
+    }
+
+    // ── EDITAR INTERVENÇÃO ──
+    let recordsCache = [];
+    async function editarIntervencao(id) {
+      if (!recordsCache.length) recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`);
+      const r = recordsCache.find(x => x.id === id);
+      if (!r) { recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`); }
+      const rec = recordsCache.find(x => x.id === id);
+      if (!rec) return;
+
+      editandoRecordId = id;
+
+      document.getElementById('titulo-modal-intervencao').textContent = 'Editar Intervenção';
+      document.getElementById('badge-edicao').style.display = 'inline-block';
+      document.getElementById('btn-submit-intervencao').textContent = 'Guardar Alterações';
+
+      document.getElementById('i-record-id').value = id;
+      document.getElementById('i-data').value = rec.shift_date || '';
+      document.getElementById('i-inicio').value = rec.time_start || '';
+      document.getElementById('i-fim').value = rec.time_end || '';
+      document.getElementById('i-descricao').value = rec.description || '';
+      document.getElementById('i-status').value = rec.status || 'em_curso';
+
+      // Carregar técnicos já associados
+      const relacoes = await db.query('record_collaborators', `select=*&record_id=eq.${id}`);
+      selecionadosIntervencao = relacoes
+        .map(rc => collaboradoresAtivos.find(c => c.id === rc.collaborator_id))
+        .filter(Boolean);
+      renderChipsTecnicos();
+
+      document.getElementById('modal-intervencao').classList.add('aberto');
     }
 
     // ── Editar Avaria ──
@@ -639,16 +682,24 @@ async function carregarMateriaisStock() {
       await carregarOS(); await carregarTimeline();
     });
 
-    // Modal Intervenção
+    // Modal Intervenção — abrir para CRIAR
     const modalIntervencao = document.getElementById('modal-intervencao');
     document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
+      editandoRecordId = null;
+      document.getElementById('titulo-modal-intervencao').textContent = 'Registar Intervenção';
+      document.getElementById('badge-edicao').style.display = 'none';
+      document.getElementById('btn-submit-intervencao').textContent = 'Guardar';
       document.getElementById('form-intervencao').reset();
+      document.getElementById('i-record-id').value = '';
       document.getElementById('i-data').value = dataHoje();
       selecionadosIntervencao = [];
       renderChipsTecnicos();
       modalIntervencao.classList.add('aberto');
     });
-    document.getElementById('btn-cancelar-intervencao').addEventListener('click', () => modalIntervencao.classList.remove('aberto'));
+    document.getElementById('btn-cancelar-intervencao').addEventListener('click', () => {
+      modalIntervencao.classList.remove('aberto');
+      editandoRecordId = null;
+    });
 
     document.getElementById('form-intervencao').addEventListener('submit', async ev => {
       ev.preventDefault();
@@ -673,16 +724,34 @@ async function carregarMateriaisStock() {
       };
 
       try {
-        const novo = await db.insert('records', payload);
-        if (novo && novo.code) throw new Error(novo.message||'Erro');
-        const recordId = Array.isArray(novo) ? novo[0].id : novo.id;
+        let recordId;
+
+        if (editandoRecordId) {
+          // MODO EDIÇÃO: atualizar registo existente
+          await db.update('records', editandoRecordId, payload);
+          recordId = editandoRecordId;
+
+          // Remover associações antigas de técnicos e recriar
+          const antigas = await db.query('record_collaborators', `select=*&record_id=eq.${recordId}`);
+          for (const a of antigas) await db.delete('record_collaborators', a.id);
+        } else {
+          // MODO CRIAÇÃO
+          const novo = await db.insert('records', payload);
+          if (novo && novo.code) throw new Error(novo.message||'Erro');
+          recordId = Array.isArray(novo) ? novo[0].id : novo.id;
+        }
+
         for (const c of selecionadosIntervencao) {
           await db.insert('record_collaborators', { record_id: recordId, collaborator_id: c.id });
         }
+
         modalIntervencao.classList.remove('aberto');
         document.getElementById('form-intervencao').reset();
         selecionadosIntervencao = [];
+        editandoRecordId = null;
+        recordsCache = []; // força recarregar na próxima edição
         await carregarIntervencoes();
+        mostrarToast('Intervenção guardada com sucesso.');
       } catch(err) {
         alert('Erro ao guardar a intervenção: '+(err.message||err));
       }
@@ -721,7 +790,6 @@ async function carregarMateriaisStock() {
           if (!materialId) { alert('Selecione um material do Stock.'); return; }
           const material = materiaisStock.find(m => m.id === materialId);
 
-          // Criar movimento de saída pendente no Stock
           const movimento = await db.insert('stock_movimentos', {
             tipo: 'saida',
             estado: 'pendente',
