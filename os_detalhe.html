@@ -117,18 +117,6 @@
       </div>
     </div>
 
-    <!-- Checklist / Guia de Verificação -->
-    <div class="card" id="card-checklist" style="display:none">
-      <div class="card-title">Guia de Verificação (CdM)</div>
-      <p class="text-muted" style="font-size:12px;margin-bottom:10px">
-        Aguardando o checklist oficial da CdM para integração completa. Campo disponível entretanto para notas e verificações manuais.
-      </p>
-      <textarea id="checklist-texto" rows="4" style="width:100%" placeholder="Notas de verificação, itens conferidos, observações da revisão..."></textarea>
-      <div style="text-align:right;margin-top:8px">
-        <button class="btn btn-primary btn-sm" id="btn-guardar-checklist">Guardar Notas</button>
-      </div>
-    </div>
-
     <!-- Checklist Digital de Manutenção -->
     <div class="card" id="card-checklist-digital" style="display:none">
       <div class="card-title">Checklist de Manutenção</div>
@@ -398,15 +386,15 @@
 
       document.getElementById('titulo-os').textContent = osAtual.numero_obra
         ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
-      document.getElementById('info-equip').textContent      = equipAtual ? equipAtual.code : '—';
+      document.getElementById('info-equip').textContent    = equipAtual ? equipAtual.code : '—';
       document.getElementById('info-categoria').textContent  = equipAtual ? (equipAtual.fleet_type||'—') : '—';
-      document.getElementById('info-sector').textContent     = osAtual.sector || '—';
-      document.getElementById('info-abertura').textContent   = formatarData(osAtual.data_abertura);
-      document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
+      document.getElementById('info-sector').textContent    = osAtual.sector || '—';
+      document.getElementById('info-abertura').textContent  = formatarData(osAtual.data_abertura);
+      document.getElementById('info-fecho').textContent     = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
       document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' h' : '—';
-      document.getElementById('info-workflow').textContent   = osAtual.status_atual;
-      document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
-      document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
+      document.getElementById('info-workflow').textContent  = osAtual.status_atual;
+      document.getElementById('info-fisico').textContent    = osAtual.status_fisico || '—';
+      document.getElementById('info-avaria').textContent    = osAtual.descricao_avaria || '—';
 
       const chipsWrap = document.getElementById('info-tipo-chips');
       if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
@@ -414,10 +402,6 @@
       } else {
         chipsWrap.innerHTML = '<span class="text-muted" style="font-size:12px">Nenhum tipo definido.</span>';
       }
-
-      const temRevisao = (osAtual.tipo_intervencao || []).includes('Revisão');
-      document.getElementById('card-checklist').style.display = temRevisao ? 'block' : 'none';
-      document.getElementById('checklist-texto').value = osAtual.checklist_info || '';
 
       if (osAtual.observacoes) {
         document.getElementById('info-observacoes').textContent = osAtual.observacoes;
@@ -666,7 +650,7 @@
       if (!pecasCache.length) pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
       const p = pecasCache.find(x => x.id === id);
       if (!p) return;
-      document.getElementById('p-id').value       = p.id;
+      document.getElementById('p-id').value        = p.id;
       document.getElementById('p-peca').value      = p.peca || '';
       document.getElementById('p-data').value      = p.data || '';
       document.getElementById('p-qtd').value       = p.quantidade || 1;
@@ -739,14 +723,6 @@
       await db.update('ordens_servico', osId, { tipo_intervencao: selecionados.length ? selecionados : null, atualizado_em: new Date().toISOString() });
       document.getElementById('edit-tipo-wrap').style.display = 'none';
       await carregarOS();
-    });
-
-    // ── Guardar Checklist ──
-    document.getElementById('btn-guardar-checklist').addEventListener('click', async () => {
-      const texto = document.getElementById('checklist-texto').value.trim();
-      await db.update('ordens_servico', osId, { checklist_info: texto || null });
-      mostrarToast('Notas guardadas.');
-      osAtual.checklist_info = texto;
     });
 
     // Atualizar estado da obra
