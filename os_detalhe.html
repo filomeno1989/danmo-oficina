@@ -129,6 +129,39 @@
       </div>
     </div>
 
+    <!-- Checklist Digital de Manutenção -->
+    <div class="card" id="card-checklist-digital" style="display:none">
+      <div class="card-title">Checklist de Manutenção</div>
+
+      <div id="checklist-sem-registo">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Selecionar Checklist</label>
+            <select id="sel-checklist-template"><option value="">— Selecionar —</option></select>
+          </div>
+          <div class="form-group" style="align-self:flex-end">
+            <button class="btn btn-primary" id="btn-iniciar-checklist">Iniciar Checklist</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="checklist-com-registo" style="display:none">
+        <div class="flex-between" style="align-items:center">
+          <div>
+            <div style="font-weight:600" id="checklist-nome-atual">—</div>
+            <div class="text-muted" style="font-size:12px" id="checklist-ref-atual">—</div>
+          </div>
+          <div class="badge badge-blue" id="checklist-progresso-badge">0/0</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:6px;height:8px;margin-top:10px;overflow:hidden">
+          <div id="checklist-progresso-bar" style="height:100%;background:var(--amber);width:0%;transition:width .3s"></div>
+        </div>
+        <div style="text-align:right;margin-top:12px">
+          <a class="btn btn-primary btn-sm" id="btn-abrir-checklist" href="#">Abrir Checklist →</a>
+        </div>
+      </div>
+    </div>
+    
     <!-- Atualizar estado -->
     <div class="card">
       <div class="card-title">Atualizar Estado</div>
@@ -394,7 +427,68 @@
       document.getElementById('sel-novo-status').value  = osAtual.status_atual;
       document.getElementById('sel-status-fisico').value = osAtual.status_fisico;
       document.getElementById('campo-numero-obra').value = osAtual.numero_obra || '';
+
+      await carregarChecklistDigital();
     }
+
+    async function carregarChecklistDigital() {
+      const temRevisao = (osAtual.tipo_intervencao || []).includes('Revisão');
+      const card = document.getElementById('card-checklist-digital');
+      if (!temRevisao || !equipAtual) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      const existentes = await db.query('checklist_preenchidos', `select=*&os_id=eq.${osId}&order=criado_em.desc`);
+
+      if (existentes.length > 0) {
+        const ck = existentes[0];
+        const tpl = await db.query('checklist_templates', `select=*&id=eq.${ck.template_id}`);
+        const template = tpl[0] || {};
+        document.getElementById('checklist-sem-registo').style.display = 'none';
+        document.getElementById('checklist-com-registo').style.display = 'block';
+        document.getElementById('checklist-nome-atual').textContent = template.nome || '—';
+        document.getElementById('checklist-ref-atual').textContent = template.ref_versao || '';
+        document.getElementById('btn-abrir-checklist').href = `checklist_preencher.html?id=${ck.id}`;
+
+        const itens = await db.query('checklist_preenchidos_itens', `select=executado&checklist_id=eq.${ck.id}`);
+        const total = itens.length;
+        const preenchidos = itens.filter(i => i.executado).length;
+        document.getElementById('checklist-progresso-badge').textContent = `${preenchidos}/${total}`;
+        document.getElementById('checklist-progresso-bar').style.width = total ? (preenchidos/total*100)+'%' : '0%';
+      } else {
+        document.getElementById('checklist-sem-registo').style.display = 'block';
+        document.getElementById('checklist-com-registo').style.display = 'none';
+
+        const templates = await db.query('checklist_templates',
+          `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
+        const sel = document.getElementById('sel-checklist-template');
+        sel.innerHTML = '<option value="">— Selecionar —</option>' +
+          templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
+      }
+    }
+
+    document.getElementById('btn-iniciar-checklist').addEventListener('click', async () => {
+      const templateId = document.getElementById('sel-checklist-template').value;
+      if (!templateId) { alert('Selecione um checklist.'); return; }
+
+      const novo = await db.insert('checklist_preenchidos', {
+        os_id: parseInt(osId),
+        template_id: parseInt(templateId),
+        equipment_id: equipAtual.id,
+        numero_obra: osAtual.numero_obra || null,
+        data_revisao: dataHoje(),
+      });
+      const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
+
+      const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
+      const secaoIds = secoes.map(s => s.id).join(',');
+      const itensTemplate = secaoIds ? await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`) : [];
+
+      for (const it of itensTemplate) {
+        await db.insert('checklist_preenchidos_itens', { checklist_id: checklistId, template_item_id: it.id });
+      }
+
+      window.location.href = `checklist_preencher.html?id=${checklistId}`;
+    });
 
     async function carregarTimeline() {
       const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
