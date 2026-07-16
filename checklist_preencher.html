@@ -24,9 +24,39 @@
     .ck-progress-bar-bg { height:10px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; }
     .ck-progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--amber),#fbbf24); border-radius:6px; transition:width .4s ease; }
 
-    .ck-dados-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:16px; }
-    .ck-dados-form .form-group { margin:0; }
-    .ck-dados-form label { font-size:10px; }
+    <div class="ck-dados-form">
+        <div class="form-group">
+          <label>Nº Obra <span style="color:var(--text2);font-weight:400">(da OS)</span></label>
+          <input type="text" id="d-numero-obra-info" disabled />
+        </div>
+        <div class="form-group">
+          <label>Horas Equip. <span style="color:var(--text2);font-weight:400">(da OS)</span></label>
+          <input type="text" id="d-horas-equip-info" disabled />
+        </div>
+        <div class="form-group">
+          <label>Data da Revisão</label>
+          <input type="date" id="d-data-revisao" />
+        </div>
+        <div class="form-group">
+          <label>Horas de Trabalho</label>
+          <input type="number" step="0.1" id="d-horas-trabalho" />
+        </div>
+        <div class="form-group">
+          <label>Folha Nº</label>
+          <input type="text" id="d-folha" />
+        </div>
+        <div class="form-group">
+          <label>Executante</label>
+          <select id="d-executante"><option value="">— Selecionar —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Encarregado</label>
+          <select id="d-encarregado"><option value="">— Selecionar —</option></select>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-primary btn-sm" id="btn-guardar-cabecalho">Guardar Dados</button>
+        </div>
+      </div>
 
     .secao-card {
       background: var(--navy2); border: 1px solid var(--border); border-radius: var(--radius);
@@ -225,7 +255,8 @@
         `${equipRelacionado ? equipRelacionado.code : ''} — Obra ${osRelacionada ? (osRelacionada.numero_obra || 'S/Nº') : '—'}`;
       document.getElementById('ck-ref').textContent = templateAtual ? templateAtual.ref_versao : '—';
 
-      document.getElementById('d-horas-equip').value     = checklistAtual.horas_equipamento || '';
+      document.getElementById('d-numero-obra-info').value = checklistAtual.numero_obra || '—';
+      document.getElementById('d-horas-equip-info').value  = checklistAtual.horas_equipamento != null ? checklistAtual.horas_equipamento + ' h' : '—';
       document.getElementById('d-data-revisao').value    = checklistAtual.data_revisao || '';
       document.getElementById('d-horas-trabalho').value  = checklistAtual.horas_trabalho || '';
       document.getElementById('d-folha').value           = checklistAtual.folha_numero || '';
