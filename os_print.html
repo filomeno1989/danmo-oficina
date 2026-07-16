@@ -226,24 +226,6 @@
       @page { size: A4; margin: 0; }
       .tabela-obra tbody tr { page-break-inside: avoid; }
       .assinaturas-wrap { page-break-inside: avoid; }
-
-      /* ══ FOLHA DO CHECKLIST (fiel ao Excel da CdM) ══ */
-      .checklist-print-section { page-break-before: always; padding-top: 4px; }
-      .ck-print-ref { text-align: right; font-size: 9px; font-weight: bold; margin-bottom: 4px; }
-      .ck-print-titles { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-      .ck-print-titles .esq { font-size: 11px; font-weight: bold; line-height: 1.4; }
-      .ck-print-titles .dir { font-size: 10px; text-align: right; }
-      .ck-print-fields { border: 1px solid #999; font-size: 9.5px; margin-bottom: 6px; }
-      .ck-print-fields div { padding: 3px 8px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
-      .ck-print-fields div:last-child { border-bottom: none; }
-      .ck-print-intervalo { text-align: center; font-weight: bold; font-size: 10px; margin-bottom: 6px; border: 1px solid #999; padding: 4px; background: #f5f5f5; }
-      table.ck-print-table { width: 100%; border-collapse: collapse; font-size: 8.8px; margin-bottom: 10px; }
-      table.ck-print-table th { border: 1px solid #999; background: #e8e8e8; padding: 3px; font-size: 8px; text-transform: uppercase; }
-      table.ck-print-table td { border: 1px solid #ccc; padding: 3px 5px; vertical-align: top; }
-      .ck-secao-row td { background: #f0f0f0; font-weight: bold; font-size: 9px; }
-      .ck-check { text-align: center; width: 30px; }
-      .ck-footer-comentarios { border: 1px solid #999; padding: 8px; font-size: 9.5px; min-height: 40px; margin-bottom: 12px; }
-      .ck-assinaturas p { font-size: 10px; margin: 16px 0; }
     }
   </style>
 </head>
@@ -411,95 +393,10 @@
     return mm >= 30 ? hh + 1 : hh;
   }
 
-  async function renderChecklistPrint(osIdParam) {
-    const cks = await db.query('checklist_preenchidos', `select=*&os_id=eq.${osIdParam}&order=criado_em.desc`);
-    if (!cks.length) return;
-    const ck = cks[0];
-
-    const tplArr = await db.query('checklist_templates', `select=*&id=eq.${ck.template_id}`);
-    const tpl = tplArr[0];
-    if (!tpl) return;
-
-    const secoes = await db.query('checklist_template_secoes', `select=*&template_id=eq.${ck.template_id}&order=ordem.asc`);
-    const secaoIds = secoes.map(s => s.id).join(',');
-    const itensTpl = secaoIds ? await db.query('checklist_template_itens', `select=*&secao_id=in.(${secaoIds})&order=ordem.asc`) : [];
-    const respostas = await db.query('checklist_preenchidos_itens', `select=*&checklist_id=eq.${ck.id}`);
-    const mapaResp = {};
-    respostas.forEach(r => mapaResp[r.template_item_id] = r);
-
-    const isDiario = tpl.tipo === 'diario';
-    const tituloTipo = tpl.tipo === 'eletrica' ? 'REVISÃO - Eléctrica'
-      : tpl.tipo === 'mecanica' ? 'REVISÃO - Mecânica' : 'CHECK LIST DIARIO';
-
-    let linhasHtml = '';
-    secoes.forEach(sec => {
-      linhasHtml += `<tr class="ck-secao-row"><td colspan="${isDiario?4:7}">${sec.nome_secao}</td></tr>`;
-      itensTpl.filter(it => it.secao_id === sec.id).forEach(it => {
-        const r = mapaResp[it.id] || {};
-        if (isDiario) {
-          linhasHtml += `<tr>
-            <td class="ck-check">${it.numero_item ?? ''}</td>
-            <td>${it.descricao}</td>
-            <td class="ck-check">${r.estado==='bom'?'✓':''}</td>
-            <td class="ck-check">${r.estado==='danificado'?'✓':''}</td>
-          </tr>`;
-        } else {
-          linhasHtml += `<tr>
-            <td class="ck-check">${it.numero_item ?? ''}</td>
-            <td>${it.descricao}</td>
-            <td class="ck-check">${r.executado==='sim'?'✓':''}</td>
-            <td class="ck-check">${r.executado==='nao'?'✓':''}</td>
-            <td class="ck-check">${r.estado==='bom'?'✓':''}</td>
-            <td class="ck-check">${r.estado==='danificado'?'✓':''}</td>
-            <td style="font-size:8px">${r.observacao||''}</td>
-          </tr>`;
-        }
-      });
-    });
-
-    const headerCols = isDiario
-      ? `<tr><th>Item</th><th>Descrição do trabalho</th><th>Bom</th><th>Danificado</th></tr>`
-      : `<tr><th>Item</th><th>Descrição do trabalho</th><th>Sim</th><th>Não</th><th>Bom</th><th>Danificado</th><th>Observações</th></tr>`;
-
-    const section = document.createElement('div');
-    section.className = 'checklist-print-section';
-    section.innerHTML = `
-      <div class="ck-print-ref">${tpl.ref_versao||''}</div>
-      <div class="ck-print-titles">
-        <div class="esq">${tpl.categoria_equipamento}<br/>${tituloTipo}</div>
-        <div class="dir">Gabinete técnico</div>
-      </div>
-      <div class="ck-print-fields">
-        <div><span>Número da obra:</span><span>${osAtual.numero_obra || '—'}</span></div>
-        <div><span>Horas do equip:</span><span>${ck.horas_equipamento ?? '—'}</span></div>
-        <div><span>Data de revisão:</span><span>${ck.data_revisao ? fData(ck.data_revisao) : '—'}</span></div>
-        <div><span>Horas de trabalho:</span><span>${ck.horas_trabalho ?? '—'}</span></div>
-        <div><span>Folha número:</span><span>${ck.folha_numero || '—'}</span></div>
-      </div>
-      ${!isDiario ? `<div class="ck-print-intervalo">${tpl.intervalo_label||''}</div>` : ''}
-      <table class="ck-print-table">
-        <thead>${headerCols}</thead>
-        <tbody>${linhasHtml}</tbody>
-      </table>
-      <div class="ck-footer-comentarios">
-        <strong style="font-size:8px;text-transform:uppercase">Informações complementares</strong><br/>
-        ${ck.observacoes_gerais || ''}
-      </div>
-      <div class="ck-assinaturas">
-        <p>Executante: ${ck.executante||'_______________________'} &nbsp;&nbsp;&nbsp; Data: ${ck.executante_data?fData(ck.executante_data):'___/___/___'}</p>
-        <p>Encarregado: ${ck.encarregado||'_______________________'} &nbsp;&nbsp;&nbsp; Data: ${ck.encarregado_data?fData(ck.encarregado_data):'___/___/___'}</p>
-      </div>
-    `;
-
-    document.querySelector('.conteudo').appendChild(section);
-  }
-
   async function carregar() {
     const osList = await db.query('ordens_servico', `select=*&id=eq.${osId}`);
     const os = osList[0];
     if (!os) { alert('Obra não encontrada.'); window.location.href='ordens.html'; return; }
-
-    window.osAtual = os; // torna "os" acessível para renderChecklistPrint()
 
     const eqList = await db.query('equipment', `select=*&id=eq.${os.equipment_id}`);
     const eq = eqList[0] || {};
@@ -597,8 +494,6 @@
         <td class="col-cp">${p.colaborador||''}</td>`;
       tbodyP.appendChild(tr);
     }
-
-    await renderChecklistPrint(osId);
   }
 
   carregar();
