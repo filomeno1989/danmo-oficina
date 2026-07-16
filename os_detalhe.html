@@ -39,6 +39,18 @@
       padding:3px 10px; border-radius:20px; background:rgba(59,130,246,.15); color:var(--blue);
       display:inline-block; margin-bottom:12px;
     }
+    .spinner-inline {
+      display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.2);
+      border-top-color: var(--amber); border-radius:50%; animation: spin .7s linear infinite;
+      margin-right:6px; vertical-align:middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .trocas-list { list-style:none; margin-top:10px; }
+    .trocas-list li {
+      font-size:12px; padding:8px 10px; border-left:3px solid var(--text2);
+      background:rgba(255,255,255,0.03); border-radius:0 6px 6px 0; margin-bottom:6px;
+    }
+    .trocas-list .meta { color:var(--text2); font-size:11px; margin-top:2px; }
   </style>
 </head>
 <body>
@@ -144,13 +156,19 @@
         <div style="background:rgba(255,255,255,0.06);border-radius:6px;height:8px;margin-top:10px;overflow:hidden">
           <div id="checklist-progresso-bar" style="height:100%;background:var(--amber);width:0%;transition:width .3s"></div>
         </div>
-       <div style="text-align:right;margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <div style="text-align:right;margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" id="btn-trocar-revisao">🔄 Trocar Revisão</button>
           <a class="btn btn-ghost btn-sm" id="btn-imprimir-checklist" href="#" target="_blank">🖨️ Imprimir</a>
           <a class="btn btn-primary btn-sm" id="btn-abrir-checklist" href="#">Abrir Checklist →</a>
         </div>
       </div>
+
+      <div id="trocas-wrap" style="display:none;margin-top:16px">
+        <div class="label" style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Histórico de Trocas de Revisão</div>
+        <ul class="trocas-list" id="lista-trocas"></ul>
+      </div>
     </div>
-    
+
     <!-- Atualizar estado -->
     <div class="card">
       <div class="card-title">Atualizar Estado</div>
@@ -354,6 +372,32 @@
     </div>
   </div>
 
+  <!-- Modal Trocar Revisão -->
+  <div class="modal-overlay" id="modal-trocar-revisao">
+    <div class="modal-box">
+      <div class="card-title">Trocar Revisão do Checklist</div>
+      <p class="text-muted" style="font-size:12px;margin-bottom:12px">
+        O checklist actual será arquivado (fica visível no histórico) e um novo será iniciado do zero com a revisão escolhida.
+      </p>
+      <div class="form-group">
+        <label>Nova Revisão *</label>
+        <select id="tr-novo-template" required><option value="">— Selecionar —</option></select>
+      </div>
+      <div class="form-group mt-16">
+        <label>Motivo da Troca *</label>
+        <textarea id="tr-motivo" rows="3" required placeholder="Ex: Ao verificar o óleo notou-se desgaste avançado, avança-se para revisão de 2000h..."></textarea>
+      </div>
+      <div class="form-group mt-16">
+        <label>Responsável</label>
+        <select id="tr-responsavel"><option value="">— Selecionar —</option></select>
+      </div>
+      <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
+        <button type="button" class="btn btn-ghost" id="btn-cancelar-troca">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirmar-troca">Confirmar Troca</button>
+      </div>
+    </div>
+  </div>
+
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script src="utils.js"></script>
@@ -368,6 +412,7 @@
     let selecionadosIntervencao = []; // [{id, name, code, setor}]
     let materiaisStock = [];
     let editandoRecordId = null; // null = criação | id = edição
+    let checklistAtivoAtual = null; // checklist_preenchidos.id actualmente activo
 
     if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
 
@@ -387,15 +432,15 @@
 
       document.getElementById('titulo-os').textContent = osAtual.numero_obra
         ? `Obra ${osAtual.numero_obra}` : `Obra s/nº — ${equipAtual ? equipAtual.code : ''}`;
-      document.getElementById('info-equip').textContent    = equipAtual ? equipAtual.code : '—';
+      document.getElementById('info-equip').textContent      = equipAtual ? equipAtual.code : '—';
       document.getElementById('info-categoria').textContent  = equipAtual ? (equipAtual.fleet_type||'—') : '—';
-      document.getElementById('info-sector').textContent    = osAtual.sector || '—';
-      document.getElementById('info-abertura').textContent  = formatarData(osAtual.data_abertura);
-      document.getElementById('info-fecho').textContent     = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
+      document.getElementById('info-sector').textContent     = osAtual.sector || '—';
+      document.getElementById('info-abertura').textContent   = formatarData(osAtual.data_abertura);
+      document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
       document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' h' : '—';
-      document.getElementById('info-workflow').textContent  = osAtual.status_atual;
-      document.getElementById('info-fisico').textContent    = osAtual.status_fisico || '—';
-      document.getElementById('info-avaria').textContent    = osAtual.descricao_avaria || '—';
+      document.getElementById('info-workflow').textContent   = osAtual.status_atual;
+      document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
+      document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
 
       const chipsWrap = document.getElementById('info-tipo-chips');
       if (osAtual.tipo_intervencao && osAtual.tipo_intervencao.length > 0) {
@@ -416,16 +461,30 @@
       await carregarChecklistDigital();
     }
 
+    // ── Bulk insert de itens do checklist (rápido — 1 pedido em vez de N) ──
+    async function criarItensChecklist(checklistId, templateId) {
+      const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
+      const secaoIds = secoes.map(s => s.id).join(',');
+      if (!secaoIds) return;
+      const itensTemplate = await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`);
+      if (!itensTemplate.length) return;
+
+      const payload = itensTemplate.map(it => ({ checklist_id: checklistId, template_item_id: it.id }));
+      await db.insert('checklist_preenchidos_itens', payload); // um único pedido
+    }
+
     async function carregarChecklistDigital() {
       const temRevisao = (osAtual.tipo_intervencao || []).includes('Revisão');
       const card = document.getElementById('card-checklist-digital');
       if (!temRevisao || !equipAtual) { card.style.display = 'none'; return; }
       card.style.display = 'block';
 
-      const existentes = await db.query('checklist_preenchidos', `select=*&os_id=eq.${osId}&order=criado_em.desc`);
+      const existentes = await db.query('checklist_preenchidos',
+        `select=*&os_id=eq.${osId}&substituido=eq.false&order=criado_em.desc`);
 
       if (existentes.length > 0) {
         const ck = existentes[0];
+        checklistAtivoAtual = ck.id;
         const tpl = await db.query('checklist_templates', `select=*&id=eq.${ck.template_id}`);
         const template = tpl[0] || {};
         document.getElementById('checklist-sem-registo').style.display = 'none';
@@ -441,6 +500,7 @@
         document.getElementById('checklist-progresso-badge').textContent = `${preenchidos}/${total}`;
         document.getElementById('checklist-progresso-bar').style.width = total ? (preenchidos/total*100)+'%' : '0%';
       } else {
+        checklistAtivoAtual = null;
         document.getElementById('checklist-sem-registo').style.display = 'block';
         document.getElementById('checklist-com-registo').style.display = 'none';
 
@@ -450,33 +510,125 @@
         sel.innerHTML = '<option value="">— Selecionar —</option>' +
           templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
       }
+
+      await carregarHistoricoTrocas();
+    }
+
+    async function carregarHistoricoTrocas() {
+      const trocas = await db.query('checklist_trocas', `select=*&os_id=eq.${osId}&order=criado_em.desc`);
+      const wrap = document.getElementById('trocas-wrap');
+      if (!trocas.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      document.getElementById('lista-trocas').innerHTML = trocas.map(t => `<li>
+        <strong>${t.template_anterior_nome || '—'} → ${t.template_novo_nome || '—'}</strong>
+        <div>${t.motivo}</div>
+        <div class="meta">${t.responsavel ? t.responsavel+' · ' : ''}${formatarDataHora(t.criado_em)}</div>
+      </li>`).join('');
     }
 
     document.getElementById('btn-iniciar-checklist').addEventListener('click', async () => {
       const templateId = document.getElementById('sel-checklist-template').value;
       if (!templateId) { alert('Selecione um checklist.'); return; }
 
-      const novo = await db.insert('checklist_preenchidos', {
-        os_id: parseInt(osId),
-        template_id: parseInt(templateId),
-        equipment_id: equipAtual.id,
-        numero_obra: osAtual.numero_obra || null,
-        horas_equipamento: osAtual.hora_equipamento || null,
-        data_revisao: dataHoje(),
-      });
-      const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
+      const btn = document.getElementById('btn-iniciar-checklist');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-inline"></span>A criar...';
 
-      const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
-      const secaoIds = secoes.map(s => s.id).join(',');
-      const itensTemplate = secaoIds ? await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`) : [];
+      try {
+        const novo = await db.insert('checklist_preenchidos', {
+          os_id: parseInt(osId),
+          template_id: parseInt(templateId),
+          equipment_id: equipAtual.id,
+          numero_obra: osAtual.numero_obra || null,
+          horas_equipamento: osAtual.hora_equipamento || null,
+          data_revisao: dataHoje(),
+        });
+        const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
 
-      for (const it of itensTemplate) {
-        await db.insert('checklist_preenchidos_itens', { checklist_id: checklistId, template_item_id: it.id });
+        await criarItensChecklist(checklistId, templateId);
+
+        window.location.href = `checklist_preencher.html?id=${checklistId}`;
+      } catch (err) {
+        alert('Erro ao iniciar checklist: ' + (err.message || err));
+        btn.disabled = false;
+        btn.textContent = 'Iniciar Checklist';
       }
-
-      window.location.href = `checklist_preencher.html?id=${checklistId}`;
     });
-      
+
+    // ── Trocar Revisão ──
+    const modalTroca = document.getElementById('modal-trocar-revisao');
+
+    document.getElementById('btn-trocar-revisao').addEventListener('click', async () => {
+      const templates = await db.query('checklist_templates',
+        `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
+      const sel = document.getElementById('tr-novo-template');
+      sel.innerHTML = '<option value="">— Selecionar —</option>' +
+        templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
+      document.getElementById('tr-motivo').value = '';
+      modalTroca.classList.add('aberto');
+    });
+    document.getElementById('btn-cancelar-troca').addEventListener('click', () => modalTroca.classList.remove('aberto'));
+
+    document.getElementById('btn-confirmar-troca').addEventListener('click', async () => {
+      const novoTemplateId = document.getElementById('tr-novo-template').value;
+      const motivo = document.getElementById('tr-motivo').value.trim();
+      const responsavel = document.getElementById('tr-responsavel').value || null;
+
+      if (!novoTemplateId) { alert('Selecione a nova revisão.'); return; }
+      if (!motivo) { alert('O motivo da troca é obrigatório.'); return; }
+      if (!checklistAtivoAtual) { alert('Não há checklist activo para trocar.'); return; }
+
+      const btn = document.getElementById('btn-confirmar-troca');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-inline"></span>A trocar...';
+
+      try {
+        // Buscar nomes para o histórico
+        const ckAtualList = await db.query('checklist_preenchidos', `select=*&id=eq.${checklistAtivoAtual}`);
+        const ckAtual = ckAtualList[0];
+        const tplAtualList = await db.query('checklist_templates', `select=*&id=eq.${ckAtual.template_id}`);
+        const tplAtual = tplAtualList[0];
+        const tplNovoList = await db.query('checklist_templates', `select=*&id=eq.${novoTemplateId}`);
+        const tplNovo = tplNovoList[0];
+
+        // Arquivar o checklist actual
+        await db.update('checklist_preenchidos', checklistAtivoAtual, { substituido: true });
+
+        // Criar o novo checklist herdando dados da OS
+        const novo = await db.insert('checklist_preenchidos', {
+          os_id: parseInt(osId),
+          template_id: parseInt(novoTemplateId),
+          equipment_id: equipAtual.id,
+          numero_obra: osAtual.numero_obra || null,
+          horas_equipamento: osAtual.hora_equipamento || null,
+          data_revisao: dataHoje(),
+        });
+        const novoChecklistId = Array.isArray(novo) ? novo[0].id : novo.id;
+
+        await criarItensChecklist(novoChecklistId, novoTemplateId);
+
+        // Registar a troca no histórico
+        await db.insert('checklist_trocas', {
+          os_id: parseInt(osId),
+          checklist_anterior_id: checklistAtivoAtual,
+          checklist_novo_id: novoChecklistId,
+          template_anterior_nome: tplAtual ? tplAtual.nome : null,
+          template_novo_nome: tplNovo ? tplNovo.nome : null,
+          motivo,
+          responsavel,
+        });
+
+        modalTroca.classList.remove('aberto');
+        await carregarChecklistDigital();
+        mostrarToast('Revisão trocada. O checklist anterior ficou no histórico.');
+      } catch (err) {
+        alert('Erro ao trocar revisão: ' + (err.message || err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Troca';
+      }
+    });
+
     async function carregarTimeline() {
       const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
       const ord = [...log].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
@@ -503,10 +655,12 @@
 
       const selResp = document.getElementById('responsavel-mudanca');
       const selPeca = document.getElementById('p-colaborador');
+      const selTroca = document.getElementById('tr-responsavel');
       collaboradoresAtivos.forEach(c => {
         const label = `${c.name}${c.code?' ('+c.code+')':''}`;
         selResp.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
         selPeca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
+        selTroca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
       });
     }
 
@@ -653,7 +807,7 @@
       if (!pecasCache.length) pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
       const p = pecasCache.find(x => x.id === id);
       if (!p) return;
-      document.getElementById('p-id').value        = p.id;
+      document.getElementById('p-id').value       = p.id;
       document.getElementById('p-peca').value      = p.peca || '';
       document.getElementById('p-data').value      = p.data || '';
       document.getElementById('p-qtd').value       = p.quantidade || 1;
@@ -683,7 +837,6 @@
       document.getElementById('i-descricao').value = rec.description || '';
       document.getElementById('i-status').value = rec.status || 'em_curso';
 
-      // Carregar técnicos já associados
       const relacoes = await db.query('record_collaborators', `select=*&record_id=eq.${id}`);
       selecionadosIntervencao = relacoes
         .map(rc => collaboradoresAtivos.find(c => c.id === rc.collaborator_id))
@@ -800,15 +953,12 @@
         let recordId;
 
         if (editandoRecordId) {
-          // MODO EDIÇÃO: atualizar registo existente
           await db.update('records', editandoRecordId, payload);
           recordId = editandoRecordId;
 
-          // Remover associações antigas de técnicos e recriar
           const antigas = await db.query('record_collaborators', `select=*&record_id=eq.${recordId}`);
           for (const a of antigas) await db.delete('record_collaborators', a.id);
         } else {
-          // MODO CRIAÇÃO
           const novo = await db.insert('records', payload);
           if (novo && novo.code) throw new Error(novo.message||'Erro');
           recordId = Array.isArray(novo) ? novo[0].id : novo.id;
@@ -822,7 +972,7 @@
         document.getElementById('form-intervencao').reset();
         selecionadosIntervencao = [];
         editandoRecordId = null;
-        recordsCache = []; // força recarregar na próxima edição
+        recordsCache = [];
         await carregarIntervencoes();
         mostrarToast('Intervenção guardada com sucesso.');
       } catch(err) {
