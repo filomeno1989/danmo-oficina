@@ -144,7 +144,8 @@
         <div style="background:rgba(255,255,255,0.06);border-radius:6px;height:8px;margin-top:10px;overflow:hidden">
           <div id="checklist-progresso-bar" style="height:100%;background:var(--amber);width:0%;transition:width .3s"></div>
         </div>
-        <div style="text-align:right;margin-top:12px">
+       <div style="text-align:right;margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+          <a class="btn btn-ghost btn-sm" id="btn-imprimir-checklist" href="#" target="_blank">🖨️ Imprimir</a>
           <a class="btn btn-primary btn-sm" id="btn-abrir-checklist" href="#">Abrir Checklist →</a>
         </div>
       </div>
@@ -432,6 +433,7 @@
         document.getElementById('checklist-nome-atual').textContent = template.nome || '—';
         document.getElementById('checklist-ref-atual').textContent = template.ref_versao || '';
         document.getElementById('btn-abrir-checklist').href = `checklist_preencher.html?id=${ck.id}`;
+        document.getElementById('btn-imprimir-checklist').href = `checklist_print.html?id=${ck.id}`;
 
         const itens = await db.query('checklist_preenchidos_itens', `select=executado&checklist_id=eq.${ck.id}`);
         const total = itens.length;
@@ -459,8 +461,21 @@
         template_id: parseInt(templateId),
         equipment_id: equipAtual.id,
         numero_obra: osAtual.numero_obra || null,
+        horas_equipamento: osAtual.hora_equipamento || null,
         data_revisao: dataHoje(),
       });
+      const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
+
+      const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
+      const secaoIds = secoes.map(s => s.id).join(',');
+      const itensTemplate = secaoIds ? await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`) : [];
+
+      for (const it of itensTemplate) {
+        await db.insert('checklist_preenchidos_itens', { checklist_id: checklistId, template_item_id: it.id });
+      }
+
+      window.location.href = `checklist_preencher.html?id=${checklistId}`;
+    });
       const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
 
       const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
