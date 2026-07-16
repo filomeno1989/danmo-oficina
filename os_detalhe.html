@@ -476,19 +476,7 @@
 
       window.location.href = `checklist_preencher.html?id=${checklistId}`;
     });
-      const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
-
-      const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
-      const secaoIds = secoes.map(s => s.id).join(',');
-      const itensTemplate = secaoIds ? await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`) : [];
-
-      for (const it of itensTemplate) {
-        await db.insert('checklist_preenchidos_itens', { checklist_id: checklistId, template_item_id: it.id });
-      }
-
-      window.location.href = `checklist_preencher.html?id=${checklistId}`;
-    });
-
+      
     async function carregarTimeline() {
       const log = await db.query('os_status_log', `select=*&os_id=eq.${osId}`);
       const ord = [...log].sort((a,b) => new Date(b.data_mudanca)-new Date(a.data_mudanca));
