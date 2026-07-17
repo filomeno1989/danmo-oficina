@@ -57,6 +57,8 @@
     table.ck-table th {
       border: 1px solid #999; background: #0d5ca8; color: #fff; padding: 4px;
       font-size: 8px; text-transform: uppercase; font-family: Arial, sans-serif;
+      table.ck-table th.grupo-header { background: #094a8a; font-size: 7.5px; letter-spacing: .5px; }
+      table.ck-table th.grupo-vazio { background: #0d5ca8; }
     }
     table.ck-table td { border: 1px solid #ccc; padding: 4px 6px; vertical-align: top; }
     .ck-secao-row td { background: #eaf2fb; font-weight: bold; font-size: 9.5px; color: #0d5ca8; }
@@ -68,10 +70,12 @@
     }
     .ck-comentarios .lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #666; font-weight: bold; margin-bottom: 3px; }
 
-    .ck-assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .ck-ass-box { border-top: 1px solid #999; padding-top: 6px; font-size: 10px; }
-    .ck-ass-box .cargo { font-weight: bold; }
-    .ck-ass-box .info { color: #555; margin-top: 2px; }
+    .ck-assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+    .ck-ass-box { border-top: 1px solid #999; padding-top: 10px; font-size: 10px; min-height: 70px; }
+    .ck-ass-box .assinatura-slot { height: 44px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 6px; }
+    .ck-ass-box .assinatura-slot img { max-height: 42px; max-width: 90%; object-fit: contain; }
+    .ck-ass-box .cargo { font-weight: bold; text-align: center; }
+    .ck-ass-box .info { color: #555; margin-top: 2px; text-align: center; }
 
     @media print {
       body { background: #fff; }
@@ -114,7 +118,10 @@
   <div class="ck-intervalo" id="ck-intervalo-box" style="display:none"></div>
 
   <table class="ck-table">
-    <thead><tr id="ck-thead-row"></tr></thead>
+    <thead>
+      <tr id="ck-thead-grupo"></tr>
+      <tr id="ck-thead-row"></tr>
+    </thead>
     <tbody id="ck-tbody"></tbody>
   </table>
 
@@ -125,10 +132,12 @@
 
   <div class="ck-assinaturas">
     <div class="ck-ass-box">
+      <div class="assinatura-slot" id="slot-executante"></div>
       <div class="cargo">Executante</div>
       <div class="info" id="f-executante">—</div>
     </div>
     <div class="ck-ass-box">
+      <div class="assinatura-slot" id="slot-encarregado"></div>
       <div class="cargo">Encarregado</div>
       <div class="info" id="f-encarregado">—</div>
     </div>
@@ -174,15 +183,33 @@
     document.getElementById('f-executante').textContent    = ck.executante ? `${ck.executante} — ${ck.executante_data ? fData(ck.executante_data) : '___/___/___'}` : '—';
     document.getElementById('f-encarregado').textContent   = ck.encarregado ? `${ck.encarregado} — ${ck.encarregado_data ? fData(ck.encarregado_data) : '___/___/___'}` : '—';
 
+    // Tenta carregar assinatura digital (bucket "assinaturas" no Supabase Storage, nome = code.png)
+    const colabsList = await db.query('collaborators', 'select=name,code');
+    function tentarAssinatura(nome, slotId) {
+      if (!nome) return;
+      const colab = colabsList.find(c => c.name === nome);
+      if (!colab || !colab.code) return;
+      const url = `https://czgnbzxoeylicrqjvncd.supabase.co/storage/v1/object/public/assinaturas/${colab.code}.png`;
+      const img = new Image();
+      img.onload = () => { document.getElementById(slotId).innerHTML = `<img src="${url}" alt="Assinatura" />`; };
+      img.onerror = () => {}; // não existe ainda — mantém espaço em branco para assinar à mão
+      img.src = url;
+    }
+    tentarAssinatura(ck.executante, 'slot-executante');
+    tentarAssinatura(ck.encarregado, 'slot-encarregado');
     if (!isDiario && tpl.intervalo_label) {
       const box = document.getElementById('ck-intervalo-box');
       box.style.display = 'block';
       box.textContent = tpl.intervalo_label;
     }
 
+    document.getElementById('ck-thead-grupo').innerHTML = isDiario
+      ? `<th class="grupo-vazio" rowspan="2">Item</th><th class="grupo-vazio" rowspan="2">Descrição do trabalho</th><th class="grupo-header" colspan="2">Estado</th>`
+      : `<th class="grupo-vazio" rowspan="2">Item</th><th class="grupo-vazio" rowspan="2">Descrição do trabalho</th><th class="grupo-header" colspan="2">Executado</th><th class="grupo-header" colspan="2">Estado</th><th class="grupo-vazio" rowspan="2">Observações</th>`;
+
     document.getElementById('ck-thead-row').innerHTML = isDiario
-      ? `<th>Item</th><th>Descrição do trabalho</th><th>Bom</th><th>Danificado</th>`
-      : `<th>Item</th><th>Descrição do trabalho</th><th>Sim</th><th>Não</th><th>Bom</th><th>Danificado</th><th>Observações</th>`;
+      ? `<th>Bom</th><th>Danificado</th>`
+      : `<th>Sim</th><th>Não</th><th>Bom</th><th>Danificado</th>`;
 
     const secoes = await db.query('checklist_template_secoes', `select=*&template_id=eq.${ck.template_id}&order=ordem.asc`);
     const secaoIds = secoes.map(s => s.id).join(',');
