@@ -49,10 +49,9 @@ body {
 
 .navbar-brand .logo-box {
   width: 36px; height: 36px;
-  background: var(--amber);
+  background: transparent;
   border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 14px; color: var(--navy);
+  object-fit: contain;
 }
 
 .navbar-brand .brand-name {
@@ -351,4 +350,24 @@ textarea { resize: vertical; min-height: 80px; }
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .navbar { padding: 0 12px; }
+}
+
+/* ═══ RESPONSIVIDADE MOBILE — NAVBAR ═══ */
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px;
+  }
+  .navbar::-webkit-scrollbar { height: 3px; }
+  .navbar-brand { flex-shrink: 0; }
+  .navbar-brand .brand-sub { display: none; }
+  .navbar-menu { flex-shrink: 0; white-space: nowrap; }
+  .navbar-menu a, .navbar-menu button {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .navbar-user { flex-shrink: 0; margin-left: 10px; }
 }
