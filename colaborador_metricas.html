@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Métricas do Colaborador — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .kpi-grid-metricas { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
+    .periodo-tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+    .periodo-tab {
+      padding:6px 16px; border-radius:20px; border:1px solid var(--border);
+      background:var(--navy2); color:var(--text2); font-size:12px; font-weight:600;
+      cursor:pointer; transition:all .15s;
+    }
+    .periodo-tab:hover { border-color:var(--amber); }
+    .periodo-tab.ativo { background:rgba(245,158,11,.15); border-color:var(--amber); color:var(--amber); }
+    .chart-wrap { position:relative; height:280px; margin-bottom:10px; }
+    .rank-badge {
+      width:22px; height:22px; border-radius:50%; display:inline-flex;
+      align-items:center; justify-content:center; font-size:11px; font-weight:700;
+      background:rgba(255,255,255,.06); color:var(--text2); margin-right:8px;
+    }
+    .rank-badge.top1 { background:rgba(245,158,11,.2); color:var(--amber); }
+    .rank-badge.top2 { background:rgba(148,163,184,.2); color:#cbd5e1; }
+    .rank-badge.top3 { background:rgba(180,83,9,.2); color:#d97706; }
+    .setor-chip {
+      background:rgba(59,130,246,.12); color:var(--blue); border-radius:20px;
+      padding:2px 10px; font-size:11px; margin:2px;
+    }
+    .selector-wrap { max-width:420px; margin-bottom:20px; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <div class="flex-between mt-16">
+      <h1 class="page-title" style="margin-bottom:0">Métricas de Colaborador</h1>
+      <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
+    </div>
+    <p class="page-sub">Desempenho técnico, horas trabalhadas e histórico de intervenções</p>
+
+    <div class="card selector-wrap">
+      <div class="form-group">
+        <label>Selecionar Colaborador</label>
+        <select id="sel-colaborador"><option value="">— Selecionar —</option></select>
+      </div>
+    </div>
+
+    <div id="conteudo-metricas" style="display:none">
+
+      <!-- Cabeçalho do colaborador -->
+      <div class="card">
+        <div class="flex-between" style="align-items:center">
+          <div>
+            <div style="font-size:20px;font-weight:700" id="colab-nome">—</div>
+            <div class="text-muted" style="font-size:13px;margin-top:2px" id="colab-info">—</div>
+          </div>
+          <div id="colab-setores"></div>
+        </div>
+      </div>
+
+      <!-- Filtro de período -->
+      <div class="periodo-tabs">
+        <div class="periodo-tab ativo" data-periodo="7">7 dias</div>
+        <div class="periodo-tab" data-periodo="30">30 dias</div>
+        <div class="periodo-tab" data-periodo="90">Trimestre</div>
+        <div class="periodo-tab" data-periodo="365">Ano</div>
+        <div class="periodo-tab" data-periodo="0">Tudo</div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid-metricas">
+        <div class="kpi-card"><div class="kpi-label">Intervenções</div><div class="kpi-value" id="kpi-intervencoes">—</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Total Horas</div><div class="kpi-value" id="kpi-horas">—</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Máquinas Distintas</div><div class="kpi-value" id="kpi-maquinas">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Ordens de Serviço</div><div class="kpi-value" id="kpi-obras">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Média Horas/Intervenção</div><div class="kpi-value" id="kpi-media">—</div></div>
+      </div>
+
+      <!-- Gráfico evolução -->
+      <div class="card">
+        <div class="card-title">Horas Trabalhadas ao Longo do Tempo</div>
+        <div class="chart-wrap">
+          <canvas id="chartEvolucao"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Máquinas mais trabalhadas -->
+        <div class="card">
+          <div class="card-title">Top Máquinas</div>
+          <div id="lista-maquinas"><p class="text-muted">Sem dados.</p></div>
+        </div>
+
+        <!-- Distribuição por sector -->
+        <div class="card">
+          <div class="card-title">Distribuição por Sector</div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="chartSetor"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico de intervenções -->
+      <div class="card">
+        <div class="card-title">Histórico de Intervenções</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Data</th><th>OS</th><th>Equipamento</th><th>Horas</th><th>Descrição</th><th>Estado</th></tr>
+            </thead>
+            <tbody id="tbody-historico"><tr><td colspan="6">A carregar...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="sem-selecao" class="card">
+      <p class="text-muted">Selecione um colaborador acima para ver as métricas.</p>
+    </div>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('equipamentos');
+
+    let colaboradores = [], todasIntervencoes = [], relacoesColab = [], todasOS = [], todosEquip = [];
+    let chartEvolucao = null, chartSetor = null;
+    let periodoAtivo = 7;
+    let colabSelecionadoId = null;
+
+    async function carregarBase() {
+      colaboradores = await db.query('collaborators', 'select=*&active=eq.true&order=name.asc');
+      const sel = document.getElementById('sel-colaborador');
+      colaboradores.forEach(c => {
+        sel.insertAdjacentHTML('beforeend',
+          `<option value="${c.id}">${c.name}${c.code?' ('+c.code+')':''}</option>`);
+      });
+
+      // Pré-carregar dados globais uma única vez (mais rápido do que repetir por colaborador)
+      const [relacoes, records, ordens, equip] = await Promise.all([
+        db.query('record_collaborators', 'select=*'),
+        db.query('records', 'select=*'),
+        db.query('ordens_servico', 'select=*'),
+        db.query('equipment', 'select=*'),
+      ]);
+      relacoesColab = relacoes;
+      todasIntervencoes = records;
+      todasOS = ordens;
+      todosEquip = equip;
+    }
+
+    function diasAtras(n) {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return d;
+    }
+
+    function filtrarPorPeriodo(intervencoes) {
+      if (periodoAtivo === 0) return intervencoes;
+      const limite = diasAtras(periodoAtivo);
+      return intervencoes.filter(r => r.shift_date && new Date(r.shift_date) >= limite);
+    }
+
+    function calcularMetricas(colabId) {
+      const recordIds = relacoesColab.filter(rc => rc.collaborator_id === colabId).map(rc => rc.record_id);
+      let intervencoesColab = todasIntervencoes.filter(r => recordIds.includes(r.id));
+      intervencoesColab = filtrarPorPeriodo(intervencoesColab);
+
+      const totalHoras = intervencoesColab.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0);
+      const maquinasSet = new Set(intervencoesColab.map(r => r.equipment_id).filter(Boolean));
+      const osSet = new Set(intervencoesColab.map(r => r.os_id).filter(Boolean));
+      const media = intervencoesColab.length ? totalHoras / intervencoesColab.length : 0;
+
+      return { intervencoesColab, totalHoras, maquinasSet, osSet, media };
+    }
+
+    function renderMetricas(colabId) {
+      const colab = colaboradores.find(c => c.id === colabId);
+      if (!colab) return;
+
+      document.getElementById('colab-nome').textContent = colab.name;
+      document.getElementById('colab-info').textContent =
+        `${colab.code ? colab.code + ' — ' : ''}${colab.department || ''}`;
+
+      const { intervencoesColab, totalHoras, maquinasSet, osSet, media } = calcularMetricas(colabId);
+
+      document.getElementById('kpi-intervencoes').textContent = intervencoesColab.length;
+      document.getElementById('kpi-horas').textContent = Math.round(totalHoras * 10) / 10 + 'h';
+      document.getElementById('kpi-maquinas').textContent = maquinasSet.size;
+      document.getElementById('kpi-obras').textContent = osSet.size;
+      document.getElementById('kpi-media').textContent = Math.round(media * 10) / 10 + 'h';
+
+      // Setores (via intervenções -> equipamento? não temos setor no equip; usamos o setor do próprio colaborador + sector da OS)
+      const setoresUsados = new Set();
+      intervencoesColab.forEach(r => {
+        const os = todasOS.find(o => o.id === r.os_id);
+        if (os && os.sector) setoresUsados.add(os.sector);
+      });
+      document.getElementById('colab-setores').innerHTML = [...setoresUsados]
+        .map(s => `<span class="setor-chip">${s}</span>`).join('') ||
+        (colab.setor ? `<span class="setor-chip">${colab.setor}</span>` : '');
+
+      renderGraficoEvolucao(intervencoesColab);
+      renderTopMaquinas(intervencoesColab);
+      renderGraficoSetor(intervencoesColab);
+      renderHistorico(intervencoesColab);
+    }
+
+    function renderGraficoEvolucao(intervencoes) {
+      const porDia = {};
+      intervencoes.forEach(r => {
+        if (!r.shift_date) return;
+        porDia[r.shift_date] = (porDia[r.shift_date] || 0) + (parseFloat(r.hours) || 0);
+      });
+      const dias = Object.keys(porDia).sort();
+      const horas = dias.map(d => Math.round(porDia[d] * 10) / 10);
+
+      if (chartEvolucao) chartEvolucao.destroy();
+      const ctx = document.getElementById('chartEvolucao').getContext('2d');
+
+      if (!dias.length) {
+        ctx.canvas.parentElement.innerHTML = '<p class="text-muted" style="padding:40px;text-align:center">Sem intervenções neste período.</p>';
+        return;
+      }
+
+      chartEvolucao = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dias.map(d => formatarData(d)),
+          datasets: [{
+            label: 'Horas',
+            data: horas,
+            backgroundColor: '#f59e0b',
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color: '#999', maxRotation: 45, minRotation: 45 }, grid: { display: false } },
+          }
+        }
+      });
+    }
+
+    function renderTopMaquinas(intervencoes) {
+      const contagem = {};
+      intervencoes.forEach(r => {
+        if (!r.equipment_id) return;
+        if (!contagem[r.equipment_id]) contagem[r.equipment_id] = { horas: 0, count: 0 };
+        contagem[r.equipment_id].horas += parseFloat(r.hours) || 0;
+        contagem[r.equipment_id].count += 1;
+      });
+
+      const ranking = Object.entries(contagem)
+        .map(([eqId, dados]) => ({ eq: todosEquip.find(e => e.id === parseInt(eqId)), ...dados }))
+        .filter(r => r.eq)
+        .sort((a, b) => b.horas - a.horas)
+        .slice(0, 8);
+
+      const container = document.getElementById('lista-maquinas');
+      if (!ranking.length) { container.innerHTML = '<p class="text-muted">Sem dados neste período.</p>'; return; }
+
+      container.innerHTML = ranking.map((r, idx) => {
+        const classe = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center">
+            <span class="rank-badge ${classe}">${idx+1}</span>
+            <div>
+              <div style="font-weight:600;font-size:13px">${r.eq.code}</div>
+              <div class="text-muted" style="font-size:11px">${r.eq.fleet_type||'—'}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;font-size:13px">${Math.round(r.horas*10)/10}h</div>
+            <div class="text-muted" style="font-size:11px">${r.count} interv.</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderGraficoSetor(intervencoes) {
+      const contagem = {};
+      intervencoes.forEach(r => {
+        const os = todasOS.find(o => o.id === r.os_id);
+        const setor = os && os.sector ? os.sector : 'Não definido';
+        contagem[setor] = (contagem[setor] || 0) + (parseFloat(r.hours) || 0);
+      });
+
+      if (chartSetor) chartSetor.destroy();
+      const ctx = document.getElementById('chartSetor').getContext('2d');
+      const labels = Object.keys(contagem);
+      const valores = labels.map(l => Math.round(contagem[l]*10)/10);
+
+      if (!labels.length) {
+        ctx.canvas.parentElement.innerHTML = '<p class="text-muted" style="padding:40px;text-align:center">Sem dados neste período.</p>';
+        return;
+      }
+
+      const cores = ['#f59e0b','#3b82f6','#22c55e','#a855f7','#ef4444','#06b6d4','#f97316'];
+      chartSetor = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{ data: valores, backgroundColor: cores, borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } }
+        }
+      });
+    }
+
+    function renderHistorico(intervencoes) {
+      const tbody = document.getElementById('tbody-historico');
+      if (!intervencoes.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sem intervenções neste período.</td></tr>'; return; }
+
+      const ordenadas = [...intervencoes].sort((a,b) => new Date(b.shift_date) - new Date(a.shift_date));
+
+      tbody.innerHTML = ordenadas.map(r => {
+        const os = todasOS.find(o => o.id === r.os_id) || {};
+        const eq = todosEquip.find(e => e.id === r.equipment_id) || {};
+        return `<tr>
+          <td>${r.shift_date ? formatarData(r.shift_date) : '—'}</td>
+          <td><a href="os_detalhe.html?id=${r.os_id}" style="color:var(--amber)">${os.numero_obra||'S/Nº'}</a></td>
+          <td>${eq.code||'—'}</td>
+          <td>${r.hours||0}h</td>
+          <td>${r.description||'—'}</td>
+          <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('sel-colaborador').addEventListener('change', (e) => {
+      colabSelecionadoId = e.target.value ? parseInt(e.target.value) : null;
+      if (colabSelecionadoId) {
+        document.getElementById('conteudo-metricas').style.display = 'block';
+        document.getElementById('sem-selecao').style.display = 'none';
+        renderMetricas(colabSelecionadoId);
+      } else {
+        document.getElementById('conteudo-metricas').style.display = 'none';
+        document.getElementById('sem-selecao').style.display = 'block';
+      }
+    });
+
+    document.querySelectorAll('.periodo-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.periodo-tab').forEach(t => t.classList.remove('ativo'));
+        tab.classList.add('ativo');
+        periodoAtivo = parseInt(tab.dataset.periodo);
+        if (colabSelecionadoId) renderMetricas(colabSelecionadoId);
+      });
+    });
+
+    (async function init() {
+      await carregarBase();
+    })();
+  </script>
+</body>
+</html>
