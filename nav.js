@@ -33,7 +33,7 @@ function renderNavbarOficina(paginaActiva) {
     <div class="navbar-user">
       <span id="nav-relogio" class="nav-data-hora"></span>
       <span class="nav-divisor">|</span>
-      <span id="nav-utilizador">${(typeof AUTH !== 'undefined' && AUTH.nome) ? AUTH.nome() : 'Oficina'}</span>
+      <span id="nav-utilizador">${(typeof AUTH !== 'undefined' && AUTH.nome && AUTH.nome()) ? AUTH.nome() : 'Danmo Oficina'}</span>
     </div>
   `;
 
