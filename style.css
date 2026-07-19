@@ -371,3 +371,21 @@ textarea { resize: vertical; min-height: 80px; }
   }
   .navbar-user { flex-shrink: 0; margin-left: 10px; }
 }
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.nav-data-hora {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.nav-divisor {
+  color: var(--border);
+}
+#nav-utilizador {
+  color: var(--text);
+  font-weight: 600;
+}
