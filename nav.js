@@ -16,7 +16,7 @@ function renderNavbarOficina(paginaActiva) {
 
   nav.innerHTML = `
     <a href="dashboard.html" class="navbar-brand">
-      <span class="logo-box">DM</span>
+      <img src="DANMO.png" alt="Danmo" class="logo-box" />
       <span>
         <div class="brand-name">Danmo</div>
         <div class="brand-sub">Oficina</div>
