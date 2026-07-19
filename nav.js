@@ -31,7 +31,25 @@ function renderNavbarOficina(paginaActiva) {
       <button id="btn-tema-header" onclick="togglePainelTemas()">🎨</button>
     </div>
     <div class="navbar-user">
-      <span>Oficina</span>
+      <span id="nav-relogio" class="nav-data-hora"></span>
+      <span class="nav-divisor">|</span>
+      <span id="nav-utilizador">${(typeof AUTH !== 'undefined' && AUTH.nome) ? AUTH.nome() : 'Oficina'}</span>
     </div>
   `;
+
+  atualizarRelogioNav();
+  if (!window._navRelogioInterval) {
+    window._navRelogioInterval = setInterval(atualizarRelogioNav, 60000);
+  }
+}
+
+function atualizarRelogioNav() {
+  const el = document.getElementById('nav-relogio');
+  if (!el) return;
+  const agora = new Date();
+  const diaSemana = agora.toLocaleDateString('pt-PT', { weekday: 'long' });
+  const dataFormatada = agora.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora = agora.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  const diaSemanaCap = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+  el.textContent = `${diaSemanaCap}, ${dataFormatada} · ${hora}`;
 }
