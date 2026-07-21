@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disponibilidade — Danmo Oficina</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .filtros-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:20px; }
+    .filtros-bar .form-group { margin:0; min-width:150px; }
+
+    .legenda-estados { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; font-size:12px; }
+    .legenda-item { display:flex; align-items:center; gap:6px; }
+    .legenda-cor { width:12px; height:12px; border-radius:3px; }
+
+    .cor-A  { background:#22c55e; } /* Disponível */
+    .cor-BD { background:#ef4444; } /* Avariada */
+    .cor-AC { background:#f97316; } /* Acidentada */
+    .cor-PM { background:#f59e0b; } /* Revisão/Manutenção */
+    .cor-SP { background:#64748b; } /* Aguarda Acessório */
+    .cor-TY { background:#3b82f6; } /* Pneumático */
+    .cor-sem-dados { background:rgba(255,255,255,0.05); }
+
+    .chart-wrap { position:relative; height:340px; margin-bottom:10px; }
+    .chart-wrap-sm { position:relative; height:220px; }
+
+    /* Heatmap diário */
+    .heatmap-scroll { overflow-x:auto; padding-bottom:8px; }
+    .heatmap-table { border-collapse:collapse; font-size:11px; white-space:nowrap; }
+    .heatmap-table th {
+      background:var(--navy3); color:var(--text2); font-size:10px; font-weight:700;
+      padding:6px 4px; text-align:center; position:sticky; top:0; z-index:2;
+    }
+    .heatmap-table th.col-equip {
+      text-align:left; position:sticky; left:0; z-index:3; background:var(--navy3);
+      padding-left:10px; min-width:110px;
+    }
+    .heatmap-table td.col-equip {
+      position:sticky; left:0; background:var(--navy2); z-index:1;
+      padding:4px 10px; font-weight:600; border-right:1px solid var(--border);
+      min-width:110px;
+    }
+    .heatmap-table td.cel {
+      width:22px; height:22px; text-align:center; cursor:default;
+      border:1px solid rgba(0,0,0,0.25);
+    }
+    .heatmap-table tr:hover td.col-equip { background:var(--navy3); }
+
+    .kpi-grid-disp { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:20px; }
+
+    .top-lista { list-style:none; }
+    .top-lista li {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;
+    }
+    .top-lista li:last-child { border-bottom:none; }
+    .top-lista .nome { font-weight:600; }
+    .top-lista .valor { font-weight:700; }
+  </style>
+</head>
+<body>
+  <div id="navbar" class="navbar"></div>
+
+  <main class="main">
+    <h1 class="page-title">Disponibilidade da Frota</h1>
+    <p class="page-sub">Relatório mensal de disponibilidade, vista diária e controlo de horímetro</p>
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="filtros-bar">
+        <div class="form-group">
+          <label>Ano</label>
+          <select id="f-ano"></select>
+        </div>
+        <div class="form-group">
+          <label>Mês (vista diária)</label>
+          <select id="f-mes">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="f-categoria"><option value="">Todas</option></select>
+        </div>
+        <div class="form-group">
+          <label>Grupo</label>
+          <select id="f-grupo"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group">
+          <label>Equipamento</label>
+          <select id="f-equipamento"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group" style="align-self:flex-end">
+          <button class="btn btn-primary" id="btn-aplicar">Aplicar</button>
+        </div>
+      </div>
+      <div class="legenda-estados">
+        <div class="legenda-item"><div class="legenda-cor cor-A"></div>Disponível</div>
+        <div class="legenda-item"><div class="legenda-cor cor-BD"></div>Avariada</div>
+        <div class="legenda-item"><div class="legenda-cor cor-AC"></div>Acidentada</div>
+        <div class="legenda-item"><div class="legenda-cor cor-PM"></div>Revisão/Manutenção</div>
+        <div class="legenda-item"><div class="legenda-cor cor-SP"></div>Aguarda Acessório</div>
+        <div class="legenda-item"><div class="legenda-cor cor-TY"></div>Pneumático</div>
+        <div class="legenda-item"><div class="legenda-cor cor-sem-dados"></div>Sem registo</div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid-disp">
+      <div class="kpi-card"><div class="kpi-label">Equipamentos no Filtro</div><div class="kpi-value" id="kpi-total">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Disponibilidade Média (Ano)</div><div class="kpi-value" id="kpi-disp-media">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Total Horas Trabalhadas (Ano)</div><div class="kpi-value" id="kpi-horas-trab">—</div></div>
+      <div class="kpi-card red"><div class="kpi-label">% Avaria + Acidente (Ano)</div><div class="kpi-value" id="kpi-avaria">—</div></div>
+    </div>
+
+    <!-- Gráfico mensal -->
+    <div class="card">
+      <div class="card-title">Disponibilidade por Mês (%)</div>
+      <div class="chart-wrap"><canvas id="chartMensal"></canvas></div>
+    </div>
+
+    <div class="grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- Horímetro -->
+      <div class="card">
+        <div class="card-title">Horas Trabalhadas por Mês</div>
+        <div class="chart-wrap-sm"><canvas id="chartHorimetro"></canvas></div>
+      </div>
+      <!-- Top avarias -->
+      <div class="card">
+        <div class="card-title">Top Equipamentos — Mais Tempo Parado</div>
+        <ul class="top-lista" id="lista-top-parados"><li class="text-muted">A carregar...</li></ul>
+      </div>
+    </div>
+
+    <!-- Vista diária -->
+    <div class="card">
+      <div class="card-title">Vista Diária — <span id="titulo-mes-heatmap">—</span></div>
+      <p class="text-muted" style="font-size:12px;margin-bottom:10px">
+        Cada célula mostra o estado dominante do equipamento nesse dia. Passa o rato por cima para detalhes.
+      </p>
+      <div class="heatmap-scroll">
+        <table class="heatmap-table" id="tabela-heatmap">
+          <thead><tr><th class="col-equip">Equipamento</th></tr></thead>
+          <tbody><tr><td class="text-muted" style="padding:16px">A carregar...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="utils.js"></script>
+  <script src="tema.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    renderNavbarOficina('dashboard');
+
+    const LABELS_ESTADO = {
+      A:'Disponível', BD:'Avariada', AC:'Acidentada',
+      PM:'Revisão/Manutenção', SP:'Aguarda Acessório', TY:'Pneumático'
+    };
+    const CORES_ESTADO = {
+      A:'#22c55e', BD:'#ef4444', AC:'#f97316', PM:'#f59e0b', SP:'#64748b', TY:'#3b82f6'
+    };
+    const ORDEM_ESTADOS = ['A','BD','AC','PM','SP','TY'];
+
+    let todosEquip = [], todasCategorias = [], todosGrupos = [];
+    let dadosAnoAtual = []; // disponibilidade_historico do ano seleccionado (cache)
+    let horimetroAnoAtual = []; // equipment_hora_log do ano seleccionado (cache)
+    let chartMensal = null, chartHorimetro = null;
+
+    function equipFiltrados() {
+      const catId = document.getElementById('f-categoria').value;
+      const grupoId = document.getElementById('f-grupo').value;
+      const equipId = document.getElementById('f-equipamento').value;
+
+      let lista = [...todosEquip];
+      if (equipId) return lista.filter(e => String(e.id) === equipId);
+      if (catId) {
+        const cat = todasCategorias.find(c => String(c.id) === catId);
+        if (cat) lista = lista.filter(e => e.fleet_type === cat.nome);
+      }
+      if (grupoId) {
+        const grupo = todosGrupos.find(g => String(g.id) === grupoId);
+        if (grupo) lista = lista.filter(e => e.group_name === grupo.nome);
+      }
+      return lista;
+    }
+
+    async function carregarListasBase() {
+      [todosEquip, todasCategorias, todosGrupos] = await Promise.all([
+        db.query('equipment', 'select=*&active=eq.true&order=code.asc'),
+        db.query('categorias_equipamento', 'select=*&ativo=eq.true&order=nome.asc'),
+        db.query('grupos_equipamento', 'select=*&ativo=eq.true&order=nome.asc'),
+      ]);
+
+      const selCat = document.getElementById('f-categoria');
+      todasCategorias.forEach(c => selCat.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.nome}</option>`));
+
+      const selEquip = document.getElementById('f-equipamento');
+      todosEquip.forEach(e => selEquip.insertAdjacentHTML('beforeend', `<option value="${e.id}">${e.code}</option>`));
+
+      document.getElementById('f-categoria').addEventListener('change', atualizarGrupos);
+      atualizarGrupos();
+    }
+
+    function atualizarGrupos() {
+      const catId = document.getElementById('f-categoria').value;
+      const sel = document.getElementById('f-grupo');
+      const grupos = catId ? todosGrupos.filter(g => String(g.categoria_id) === catId) : todosGrupos;
+      sel.innerHTML = '<option value="">Todos</option>';
+      grupos.forEach(g => sel.insertAdjacentHTML('beforeend', `<option value="${g.id}">${g.nome}</option>`));
+    }
+
+    async function carregarAnosDisponiveis() {
+      // Descobre os anos existentes olhando para um conjunto pequeno de registos distintos
+      const amostra = await db.query('disponibilidade_historico', 'select=ano&limit=5000');
+      const anos = [...new Set(amostra.map(r => r.ano))].sort((a,b) => b-a);
+      const anoAtual = new Date().getFullYear();
+      if (!anos.includes(anoAtual)) anos.unshift(anoAtual);
+
+      const sel = document.getElementById('f-ano');
+      sel.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
+    }
+
+    async function carregarDadosDoAno(ano) {
+      // Cache: só refaz o pedido se o ano mudou
+      dadosAnoAtual = await db.query('disponibilidade_historico', `select=*&ano=eq.${ano}`);
+      const dataIni = `${ano}-01-01`;
+      const dataFim = `${ano}-12-31`;
+      horimetroAnoAtual = await db.query('equipment_hora_log',
+        `select=*&data_leitura=gte.${dataIni}&data_leitura=lte.${dataFim}&order=data_leitura.asc`);
+    }
+
+    // ═══ AGREGAÇÕES ═══
+    function agregarPorMes(equipIds) {
+      // Retorna { mes: { A: horas, BD: horas, ... } }
+      const porMes = {};
+      for (let m = 1; m <= 12; m++) porMes[m] = { A:0,BD:0,AC:0,PM:0,SP:0,TY:0 };
+      dadosAnoAtual.forEach(r => {
+        if (!equipIds.has(r.equipment_id)) return;
+        if (porMes[r.mes] && porMes[r.mes][r.estado] !== undefined) {
+          porMes[r.mes][r.estado] += parseFloat(r.horas) || 0;
+        }
+      });
+      return porMes;
+    }
+
+    function calcularHorasTrabalhadasPorMes(equipIds) {
+      // Para cada equipamento: ordenar leituras por data, delta entre consecutivas -> mês da leitura mais recente
+      const porMes = {};
+      for (let m = 1; m <= 12; m++) porMes[m] = 0;
+
+      const porEquip = {};
+      horimetroAnoAtual.forEach(r => {
+        if (!equipIds.has(r.equipment_id)) return;
+        if (!porEquip[r.equipment_id]) porEquip[r.equipment_id] = [];
+        porEquip[r.equipment_id].push(r);
+      });
+
+      Object.values(porEquip).forEach(leituras => {
+        leituras.sort((a,b) => new Date(a.data_leitura) - new Date(b.data_leitura));
+        for (let i = 1; i < leituras.length; i++) {
+          const delta = parseFloat(leituras[i].hora) - parseFloat(leituras[i-1].hora);
+          if (delta < 0) continue; // leitura suspeita, ignora no gráfico
+          const mes = new Date(leituras[i].data_leitura).getMonth() + 1;
+          porMes[mes] += delta;
+        }
+      });
+      return porEquip, porMes;
+    }
+
+    function totalHorasTrabalhadasEquip(equipIds) {
+      const porEquip = {};
+      horimetroAnoAtual.forEach(r => {
+        if (!equipIds.has(r.equipment_id)) return;
+        if (!porEquip[r.equipment_id]) porEquip[r.equipment_id] = [];
+        porEquip[r.equipment_id].push(r);
+      });
+      const totais = {};
+      Object.entries(porEquip).forEach(([eid, leituras]) => {
+        leituras.sort((a,b) => new Date(a.data_leitura) - new Date(b.data_leitura));
+        if (leituras.length >= 2) {
+          const total = parseFloat(leituras[leituras.length-1].hora) - parseFloat(leituras[0].hora);
+          totais[eid] = total > 0 ? total : 0;
+        }
+      });
+      return totais;
+    }
+
+    // ═══ RENDER ═══
+    function renderTudo() {
+      const lista = equipFiltrados();
+      const equipIds = new Set(lista.map(e => e.id));
+
+      document.getElementById('kpi-total').textContent = lista.length;
+
+      const porMes = agregarPorMes(equipIds);
+
+      // KPI disponibilidade média anual + % avaria
+      let totalGeral = 0, totalDisp = 0, totalAvariaAcidente = 0;
+      Object.values(porMes).forEach(m => {
+        const somaTotal = Object.values(m).reduce((s,v)=>s+v,0);
+        totalGeral += somaTotal;
+        totalDisp += m.A;
+        totalAvariaAcidente += m.BD + m.AC;
+      });
+      document.getElementById('kpi-disp-media').textContent = totalGeral ? Math.round(totalDisp/totalGeral*1000)/10 + '%' : '—';
+      document.getElementById('kpi-avaria').textContent = totalGeral ? Math.round(totalAvariaAcidente/totalGeral*1000)/10 + '%' : '—';
+
+      renderGraficoMensal(porMes);
+
+      // Horímetro
+      const porMesHoras = {};
+      for (let m=1;m<=12;m++) porMesHoras[m]=0;
+      const porEquipLeituras = {};
+      horimetroAnoAtual.forEach(r => {
+        if (!equipIds.has(r.equipment_id)) return;
+        if (!porEquipLeituras[r.equipment_id]) porEquipLeituras[r.equipment_id] = [];
+        porEquipLeituras[r.equipment_id].push(r);
+      });
+      Object.values(porEquipLeituras).forEach(leituras => {
+        leituras.sort((a,b) => new Date(a.data_leitura) - new Date(b.data_leitura));
+        for (let i=1;i<leituras.length;i++) {
+          const delta = parseFloat(leituras[i].hora) - parseFloat(leituras[i-1].hora);
+          if (delta < 0) continue;
+          const mes = new Date(leituras[i].data_leitura).getMonth()+1;
+          porMesHoras[mes] += delta;
+        }
+      });
+      const totalHorasAno = Object.values(porMesHoras).reduce((s,v)=>s+v,0);
+      document.getElementById('kpi-horas-trab').textContent = Math.round(totalHorasAno).toLocaleString('pt-PT') + 'h';
+      renderGraficoHorimetro(porMesHoras);
+
+      renderTopParados(equipIds);
+      renderHeatmapDiario(lista);
+    }
+
+    function renderGraficoMensal(porMes) {
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const datasets = ORDEM_ESTADOS.map(estado => {
+        const dados = [];
+        for (let m=1;m<=12;m++) {
+          const total = Object.values(porMes[m]).reduce((s,v)=>s+v,0);
+          dados.push(total ? Math.round(porMes[m][estado]/total*1000)/10 : 0);
+        }
+        return {
+          label: LABELS_ESTADO[estado],
+          data: dados,
+          backgroundColor: CORES_ESTADO[estado],
+          stack: 'stack1',
+        };
+      });
+
+      if (chartMensal) chartMensal.destroy();
+      const ctx = document.getElementById('chartMensal').getContext('2d');
+      chartMensal = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: meses, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position:'bottom', labels:{ color:'#ccc', font:{size:11} } },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%` } }
+          },
+          scales: {
+            x: { stacked:true, ticks:{color:'#999'}, grid:{display:false} },
+            y: { stacked:true, max:100, ticks:{color:'#999', callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.05)'} },
+          }
+        }
+      });
+    }
+
+    function renderGraficoHorimetro(porMesHoras) {
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const dados = meses.map((_,i) => Math.round(porMesHoras[i+1]));
+
+      if (chartHorimetro) chartHorimetro.destroy();
+      const ctx = document.getElementById('chartHorimetro').getContext('2d');
+      chartHorimetro = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: meses, datasets: [{ label:'Horas Trabalhadas', data: dados, backgroundColor:'#3b82f6', borderRadius:4 }] },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins: { legend:{display:false} },
+          scales: {
+            x: { ticks:{color:'#999'}, grid:{display:false} },
+            y: { ticks:{color:'#999'}, grid:{color:'rgba(255,255,255,0.05)'} },
+          }
+        }
+      });
+    }
+
+    function renderTopParados(equipIds) {
+      const porEquip = {};
+      dadosAnoAtual.forEach(r => {
+        if (!equipIds.has(r.equipment_id)) return;
+        if (r.estado === 'A') return;
+        if (!porEquip[r.equipment_id]) porEquip[r.equipment_id] = 0;
+        porEquip[r.equipment_id] += parseFloat(r.horas) || 0;
+      });
+
+      const ranking = Object.entries(porEquip)
+        .map(([eid, horas]) => ({ eq: todosEquip.find(e => e.id === parseInt(eid)), horas }))
+        .filter(r => r.eq)
+        .sort((a,b) => b.horas - a.horas)
+        .slice(0, 8);
+
+      const container = document.getElementById('lista-top-parados');
+      if (!ranking.length) { container.innerHTML = '<li class="text-muted">Sem dados para este filtro.</li>'; return; }
+
+      container.innerHTML = ranking.map(r => `<li>
+        <span class="nome">${r.eq.code} <span class="text-muted" style="font-weight:400">— ${r.eq.fleet_type||''}</span></span>
+        <span class="valor text-red">${Math.round(r.horas)}h</span>
+      </li>`).join('');
+    }
+
+    function renderHeatmapDiario(listaEquip) {
+      const ano = parseInt(document.getElementById('f-ano').value);
+      const mes = parseInt(document.getElementById('f-mes').value);
+      const nomesMeses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      document.getElementById('titulo-mes-heatmap').textContent = `${nomesMeses[mes-1]} ${ano}`;
+
+      const diasNoMes = new Date(ano, mes, 0).getDate();
+
+      // Mapa: equipId -> dia -> { estado: horas }
+      const mapa = {};
+      dadosAnoAtual.forEach(r => {
+        if (r.mes !== mes) return;
+        if (!mapa[r.equipment_id]) mapa[r.equipment_id] = {};
+        if (!mapa[r.equipment_id][r.dia]) mapa[r.equipment_id][r.dia] = {};
+        mapa[r.equipment_id][r.dia][r.estado] = (mapa[r.equipment_id][r.dia][r.estado]||0) + parseFloat(r.horas);
+      });
+
+      const thead = document.querySelector('#tabela-heatmap thead tr');
+      thead.innerHTML = '<th class="col-equip">Equipamento</th>' +
+        Array.from({length: diasNoMes}, (_,i) => `<th>${i+1}</th>`).join('');
+
+      const tbody = document.querySelector('#tabela-heatmap tbody');
+      if (!listaEquip.length) { tbody.innerHTML = '<tr><td class="text-muted" style="padding:16px">Nenhum equipamento neste filtro.</td></tr>'; return; }
+
+      // Limitar a 60 máquinas por vez para não travar o browser (aviso se exceder)
+      const listaLimitada = listaEquip.slice(0, 60);
+
+      tbody.innerHTML = listaLimitada.map(eq => {
+        const diasDoEquip = mapa[eq.id] || {};
+        const celulas = Array.from({length: diasNoMes}, (_,i) => {
+          const dia = i+1;
+          const estadosDoDia = diasDoEquip[dia];
+          if (!estadosDoDia) {
+            return `<td class="cel cor-sem-dados" title="${eq.code} — Dia ${dia}: sem registo"></td>`;
+          }
+          const dominante = Object.entries(estadosDoDia).sort((a,b)=>b[1]-a[1])[0][0];
+          const horas = estadosDoDia[dominante];
+          return `<td class="cel cor-${dominante}" title="${eq.code} — Dia ${dia}: ${LABELS_ESTADO[dominante]} (${Math.round(horas)}h)"></td>`;
+        }).join('');
+        return `<tr><td class="col-equip">${eq.code}</td>${celulas}</tr>`;
+      }).join('');
+
+      if (listaEquip.length > 60) {
+        tbody.insertAdjacentHTML('beforeend',
+          `<tr><td colspan="${diasNoMes+1}" class="text-muted" style="padding:10px;text-align:center">
+            Mostrando 60 de ${listaEquip.length} equipamentos — refine o filtro (categoria/grupo) para ver os restantes.
+          </td></tr>`);
+      }
+    }
+
+    document.getElementById('btn-aplicar').addEventListener('click', async () => {
+      const ano = document.getElementById('f-ano').value;
+      await carregarDadosDoAno(ano);
+      renderTudo();
+    });
+
+    document.getElementById('f-mes').addEventListener('change', () => {
+      renderHeatmapDiario(equipFiltrados());
+    });
+
+    (async function init() {
+      await carregarListasBase();
+      await carregarAnosDisponiveis();
+      const ano = document.getElementById('f-ano').value;
+      await carregarDadosDoAno(ano);
+      renderTudo();
+    })();
+  </script>
+</body>
+</html>
