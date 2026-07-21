@@ -11,6 +11,7 @@ function renderNavbarOficina(paginaActiva) {
     { id: 'ordens',        label: 'Ordens de Serviço', href: 'ordens.html' },
     { id: 'equipamentos',  label: 'Equipamentos',   href: 'equipamentos.html' },
     { id: 'colaborador_metricas',  label: 'Metrica',   href: 'colaborador_metricas.html' },
+    { id: 'disponibilidade',  label: 'Disponibilidade',   href: 'disponibilidade.html' },
     { id: 'config',        label: '⚙️',         href: 'config.html' },
   ];
 
