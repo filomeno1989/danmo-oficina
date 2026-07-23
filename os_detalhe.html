@@ -39,18 +39,15 @@
       padding:3px 10px; border-radius:20px; background:rgba(59,130,246,.15); color:var(--blue);
       display:inline-block; margin-bottom:12px;
     }
-    .spinner-inline {
-      display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.2);
-      border-top-color: var(--amber); border-radius:50%; animation: spin .7s linear infinite;
-      margin-right:6px; vertical-align:middle;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
     .trocas-list { list-style:none; margin-top:10px; }
     .trocas-list li {
       font-size:12px; padding:8px 10px; border-left:3px solid var(--text2);
       background:rgba(255,255,255,0.03); border-radius:0 6px 6px 0; margin-bottom:6px;
     }
     .trocas-list .meta { color:var(--text2); font-size:11px; margin-top:2px; }
+    .unidade-select { width:110px; flex-shrink:0; }
+    .peca-linha { display:flex; gap:8px; }
+    .peca-linha input:first-child { flex:1; }
   </style>
 </head>
 <body>
@@ -71,7 +68,7 @@
       <div class="kpi-card"><div class="kpi-label">Sector</div><div class="kpi-value" id="info-sector" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Abertura</div><div class="kpi-value" id="info-abertura" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Fecho</div><div class="kpi-value" id="info-fecho" style="font-size:18px">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Conta Horas</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Contador</div><div class="kpi-value" id="info-horimetro" style="font-size:18px">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Estado Físico</div><div class="kpi-value" id="info-fisico" style="font-size:15px">—</div></div>
       <div class="kpi-card blue"><div class="kpi-label">Estado da Obra</div><div class="kpi-value" id="info-workflow" style="font-size:15px">—</div></div>
     </div>
@@ -111,9 +108,6 @@
             <label><input type="checkbox" value="Rep. Estrutura" /> Rep. Estrutura</label>
             <label><input type="checkbox" value="Outros" /> Outros</label>
           </div>
-          <p class="nota" style="font-size:11px;color:var(--text2);font-style:italic;margin-top:6px">
-            Adiciona novos tipos se, durante o trabalho, surgirem outras necessidades (ex: entrou para lubrificação e encontraram pneu danificado).
-          </p>
           <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
             <button class="btn btn-ghost btn-sm" id="btn-cancelar-tipo">Cancelar</button>
             <button class="btn btn-primary btn-sm" id="btn-guardar-tipo">Guardar</button>
@@ -186,7 +180,12 @@
         </div>
         <div class="form-group">
           <label>Responsável</label>
-          <select id="responsavel-mudanca"><option value="">— Selecionar —</option></select>
+          <div class="tech-search-wrap">
+            <input type="text" id="responsavel-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+            <div class="tech-dropdown" id="responsavel-dropdown"></div>
+          </div>
+          <input type="hidden" id="responsavel-mudanca" />
+          <div class="chips-wrap" id="responsavel-chip"></div>
         </div>
         <div class="form-group" style="align-self:flex-end">
           <button class="btn btn-primary" id="btn-mudar-status">Atualizar Estado da Obra</button>
@@ -202,7 +201,6 @@
             <option value="Revisão/Manutenção">Revisão/Manutenção</option>
             <option value="Inspeção">Inspeção</option>
             <option value="Aguarda Acessório">Aguarda Acessório</option>
-            <option value="Concluído">Concluído</option>
           </select>
         </div>
         <div class="form-group">
@@ -265,9 +263,9 @@
       <div class="table-wrap mt-16">
         <table>
           <thead>
-            <tr><th>Peça / Material</th><th>Data</th><th>Qtd</th><th>Colaborador</th><th></th></tr>
+            <tr><th>Peça / Material</th><th>Data</th><th>Qtd</th><th>Unidade</th><th>Colaborador</th><th></th></tr>
           </thead>
-          <tbody id="tbody-pecas"><tr><td colspan="5">Sem peças registadas.</td></tr></tbody>
+          <tbody id="tbody-pecas"><tr><td colspan="6">Sem peças registadas.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -296,7 +294,7 @@
         </div>
         <div class="form-group mt-16">
           <label>Descrição do Trabalho *</label>
-          <textarea id="i-descricao" rows="3" required placeholder="O que foi feito..."></textarea>
+          <textarea id="i-descricao" rows="3" required placeholder="O que foi feito... (use ; para separar tarefas em linhas diferentes)"></textarea>
         </div>
         <div class="form-group mt-16">
           <label>Estado</label>
@@ -337,7 +335,8 @@
 
         <div class="form-group mt-16" id="p-peca-texto-wrap">
           <label>Peça / Material *</label>
-          <input type="text" id="p-peca" required placeholder="Ex: Correia de comando, Terminal de encaixe..." />
+          <input type="text" id="p-peca" required list="lista-materiais-sugeridos" placeholder="Ex: Correia de comando, Óleo 15W40..." />
+          <datalist id="lista-materiais-sugeridos"></datalist>
         </div>
 
         <div class="form-group mt-16" id="p-peca-select-wrap" style="display:none">
@@ -357,16 +356,32 @@
           </div>
           <div class="form-group">
             <label>Quantidade</label>
-            <input type="number" id="p-qtd" min="1" value="1" />
+            <div class="peca-linha">
+              <input type="number" id="p-qtd" min="0.01" step="0.01" value="1" />
+              <select id="p-unidade" class="unidade-select" list="lista-unidades">
+                <option value="Unidade">Unidade</option>
+                <option value="Litro">Litro</option>
+                <option value="Kg">Kg</option>
+                <option value="Metro">Metro</option>
+                <option value="Caixa">Caixa</option>
+                <option value="Par">Par</option>
+                <option value="Rolo">Rolo</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="form-group mt-16">
           <label>Colaborador que Aplicou</label>
-          <select id="p-colaborador"><option value="">— Selecionar —</option></select>
+          <div class="tech-search-wrap">
+            <input type="text" id="p-colab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+            <div class="tech-dropdown" id="p-colab-dropdown"></div>
+          </div>
+          <input type="hidden" id="p-colaborador" />
+          <div class="chips-wrap" id="p-colab-chip"></div>
         </div>
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-peca">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-peca">Guardar</button>
         </div>
       </form>
     </div>
@@ -389,7 +404,12 @@
       </div>
       <div class="form-group mt-16">
         <label>Responsável</label>
-        <select id="tr-responsavel"><option value="">— Selecionar —</option></select>
+        <div class="tech-search-wrap">
+          <input type="text" id="tr-responsavel-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+          <div class="tech-dropdown" id="tr-responsavel-dropdown"></div>
+        </div>
+        <input type="hidden" id="tr-responsavel" />
+        <div class="chips-wrap" id="tr-responsavel-chip"></div>
       </div>
       <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
         <button type="button" class="btn btn-ghost" id="btn-cancelar-troca">Cancelar</button>
@@ -409,10 +429,11 @@
     const params = new URLSearchParams(window.location.search);
     const osId = params.get('id');
     let osAtual = null, equipAtual = null, collaboradoresAtivos = [];
-    let selecionadosIntervencao = []; // [{id, name, code, setor}]
+    let selecionadosIntervencao = [];
     let materiaisStock = [];
-    let editandoRecordId = null; // null = criação | id = edição
-    let checklistAtivoAtual = null; // checklist_preenchidos.id actualmente activo
+    let materiaisSugeridos = [];
+    let editandoRecordId = null;
+    let checklistAtivoAtual = null;
 
     if (!osId) { alert('Obra não especificada.'); window.location.href='ordens.html'; }
 
@@ -420,6 +441,12 @@
       const horas = Math.floor(horasDecimal);
       const minutos = (horasDecimal - horas) * 60;
       return minutos >= 30 ? horas + 1 : horas;
+    }
+
+    // Transforma ';' em quebra de linha na apresentação (',' e '.' continuam normais)
+    function formatarDescricao(texto) {
+      if (!texto) return '—';
+      return texto.split(';').map(t => t.trim()).filter(Boolean).join('<br>');
     }
 
     async function carregarOS() {
@@ -437,7 +464,7 @@
       document.getElementById('info-sector').textContent     = osAtual.sector || '—';
       document.getElementById('info-abertura').textContent   = formatarData(osAtual.data_abertura);
       document.getElementById('info-fecho').textContent      = osAtual.data_fecho ? formatarData(osAtual.data_fecho) : '—';
-      document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' h' : '—';
+      document.getElementById('info-horimetro').textContent  = osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '—';
       document.getElementById('info-workflow').textContent   = osAtual.status_atual;
       document.getElementById('info-fisico').textContent     = osAtual.status_fisico || '—';
       document.getElementById('info-avaria').textContent     = osAtual.descricao_avaria || '—';
@@ -461,16 +488,14 @@
       await carregarChecklistDigital();
     }
 
-    // ── Bulk insert de itens do checklist (rápido — 1 pedido em vez de N) ──
     async function criarItensChecklist(checklistId, templateId) {
       const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
       const secaoIds = secoes.map(s => s.id).join(',');
       if (!secaoIds) return;
       const itensTemplate = await db.query('checklist_template_itens', `select=id&secao_id=in.(${secaoIds})`);
       if (!itensTemplate.length) return;
-
       const payload = itensTemplate.map(it => ({ checklist_id: checklistId, template_item_id: it.id }));
-      await db.insert('checklist_preenchidos_itens', payload); // um único pedido
+      await db.insert('checklist_preenchidos_itens', payload);
     }
 
     async function carregarChecklistDigital() {
@@ -479,8 +504,7 @@
       if (!temRevisao || !equipAtual) { card.style.display = 'none'; return; }
       card.style.display = 'block';
 
-      const existentes = await db.query('checklist_preenchidos',
-        `select=*&os_id=eq.${osId}&substituido=eq.false&order=criado_em.desc`);
+      const existentes = await db.query('checklist_preenchidos', `select=*&os_id=eq.${osId}&substituido=eq.false&order=criado_em.desc`);
 
       if (existentes.length > 0) {
         const ck = existentes[0];
@@ -526,14 +550,14 @@
       </li>`).join('');
     }
 
-    document.getElementById('btn-iniciar-checklist').addEventListener('click', async () => {
+    document.getElementById('btn-iniciar-checklist').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
       const templateId = document.getElementById('sel-checklist-template').value;
       if (!templateId) { alert('Selecione um checklist.'); return; }
 
-      const btn = document.getElementById('btn-iniciar-checklist');
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-inline"></span>A criar...';
-
+      btn.textContent = 'A criar...';
       try {
         const novo = await db.insert('checklist_preenchidos', {
           os_id: parseInt(osId),
@@ -544,9 +568,7 @@
           data_revisao: dataHoje(),
         });
         const checklistId = Array.isArray(novo) ? novo[0].id : novo.id;
-
         await criarItensChecklist(checklistId, templateId);
-
         window.location.href = `checklist_preencher.html?id=${checklistId}`;
       } catch (err) {
         alert('Erro ao iniciar checklist: ' + (err.message || err));
@@ -557,7 +579,6 @@
 
     // ── Trocar Revisão ──
     const modalTroca = document.getElementById('modal-trocar-revisao');
-
     document.getElementById('btn-trocar-revisao').addEventListener('click', async () => {
       const templates = await db.query('checklist_templates',
         `select=*&categoria_equipamento=eq.${encodeURIComponent(equipAtual.fleet_type||'')}&ativo=eq.true&order=intervalo_horas.asc`);
@@ -565,11 +586,14 @@
       sel.innerHTML = '<option value="">— Selecionar —</option>' +
         templates.map(t => `<option value="${t.id}">${t.nome} (${t.intervalo_label||t.tipo})</option>`).join('');
       document.getElementById('tr-motivo').value = '';
+      seletorTrResponsavel.reset();
       modalTroca.classList.add('aberto');
     });
     document.getElementById('btn-cancelar-troca').addEventListener('click', () => modalTroca.classList.remove('aberto'));
 
-    document.getElementById('btn-confirmar-troca').addEventListener('click', async () => {
+    document.getElementById('btn-confirmar-troca').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
       const novoTemplateId = document.getElementById('tr-novo-template').value;
       const motivo = document.getElementById('tr-motivo').value.trim();
       const responsavel = document.getElementById('tr-responsavel').value || null;
@@ -578,12 +602,9 @@
       if (!motivo) { alert('O motivo da troca é obrigatório.'); return; }
       if (!checklistAtivoAtual) { alert('Não há checklist activo para trocar.'); return; }
 
-      const btn = document.getElementById('btn-confirmar-troca');
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-inline"></span>A trocar...';
-
+      btn.textContent = 'A trocar...';
       try {
-        // Buscar nomes para o histórico
         const ckAtualList = await db.query('checklist_preenchidos', `select=*&id=eq.${checklistAtivoAtual}`);
         const ckAtual = ckAtualList[0];
         const tplAtualList = await db.query('checklist_templates', `select=*&id=eq.${ckAtual.template_id}`);
@@ -591,10 +612,8 @@
         const tplNovoList = await db.query('checklist_templates', `select=*&id=eq.${novoTemplateId}`);
         const tplNovo = tplNovoList[0];
 
-        // Arquivar o checklist actual
         await db.update('checklist_preenchidos', checklistAtivoAtual, { substituido: true });
 
-        // Criar o novo checklist herdando dados da OS
         const novo = await db.insert('checklist_preenchidos', {
           os_id: parseInt(osId),
           template_id: parseInt(novoTemplateId),
@@ -604,10 +623,8 @@
           data_revisao: dataHoje(),
         });
         const novoChecklistId = Array.isArray(novo) ? novo[0].id : novo.id;
-
         await criarItensChecklist(novoChecklistId, novoTemplateId);
 
-        // Registar a troca no histórico
         await db.insert('checklist_trocas', {
           os_id: parseInt(osId),
           checklist_anterior_id: checklistAtivoAtual,
@@ -650,18 +667,50 @@
           </li>`).join('');
     }
 
+    // ── Widget de busca simples (seleção única, reutilizável) ──
+    function criarSeletorSimples({ inputId, dropdownId, hiddenId, chipId }) {
+      const inputEl = document.getElementById(inputId);
+      const ddEl = document.getElementById(dropdownId);
+      const hiddenEl = document.getElementById(hiddenId);
+      const chipEl = document.getElementById(chipId);
+
+      function renderChip() {
+        const nome = hiddenEl.value;
+        chipEl.innerHTML = nome ? `<span class="chip-tech">${nome}<button type="button">✕</button></span>` : '';
+      }
+      chipEl.addEventListener('click', e => {
+        if (e.target.closest('button')) { hiddenEl.value=''; renderChip(); }
+      });
+      inputEl.addEventListener('input', () => {
+        const q = inputEl.value.toLowerCase().trim();
+        if (!q) { ddEl.classList.remove('open'); ddEl.innerHTML=''; return; }
+        const matches = collaboradoresAtivos.filter(c => c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q));
+        ddEl.innerHTML = matches.length
+          ? matches.map(c => `<div class="tech-option" data-nome="${c.name}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`).join('')
+          : '<div class="tech-option text-muted">Nenhum resultado.</div>';
+        ddEl.classList.add('open');
+      });
+      ddEl.addEventListener('click', e => {
+        const opt = e.target.closest('.tech-option');
+        if (!opt || !opt.dataset.nome) return;
+        hiddenEl.value = opt.dataset.nome;
+        inputEl.value = '';
+        ddEl.classList.remove('open');
+        renderChip();
+      });
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#'+inputId) && !e.target.closest('#'+dropdownId)) ddEl.classList.remove('open');
+      });
+      return { reset: () => { hiddenEl.value=''; renderChip(); } };
+    }
+
+    let seletorResponsavel, seletorPColab, seletorTrResponsavel;
+
     async function carregarTecnicosBase() {
       collaboradoresAtivos = await db.query('collaborators','select=id,name,setor,code&active=eq.true&order=name.asc');
-
-      const selResp = document.getElementById('responsavel-mudanca');
-      const selPeca = document.getElementById('p-colaborador');
-      const selTroca = document.getElementById('tr-responsavel');
-      collaboradoresAtivos.forEach(c => {
-        const label = `${c.name}${c.code?' ('+c.code+')':''}`;
-        selResp.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
-        selPeca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
-        selTroca.insertAdjacentHTML('beforeend', `<option value="${c.name}">${label}</option>`);
-      });
+      seletorResponsavel   = criarSeletorSimples({ inputId:'responsavel-search', dropdownId:'responsavel-dropdown', hiddenId:'responsavel-mudanca', chipId:'responsavel-chip' });
+      seletorPColab        = criarSeletorSimples({ inputId:'p-colab-search', dropdownId:'p-colab-dropdown', hiddenId:'p-colaborador', chipId:'p-colab-chip' });
+      seletorTrResponsavel = criarSeletorSimples({ inputId:'tr-responsavel-search', dropdownId:'tr-responsavel-dropdown', hiddenId:'tr-responsavel', chipId:'tr-responsavel-chip' });
     }
 
     async function carregarMateriaisStock() {
@@ -673,6 +722,25 @@
       });
     }
 
+    async function carregarMateriaisSugeridos() {
+      materiaisSugeridos = await db.query('materiais_sugeridos', 'select=nome&order=usos.desc');
+      const dl = document.getElementById('lista-materiais-sugeridos');
+      dl.innerHTML = materiaisSugeridos.map(m => `<option value="${m.nome}"></option>`).join('');
+    }
+
+    async function registarMaterialSugerido(nome) {
+      if (!nome) return;
+      const existente = materiaisSugeridos.find(m => m.nome.toLowerCase() === nome.toLowerCase());
+      if (existente) {
+        await db.query('materiais_sugeridos', `select=id,usos&nome=eq.${encodeURIComponent(nome)}`).then(async rows => {
+          if (rows[0]) await db.update('materiais_sugeridos', rows[0].id, { usos: (rows[0].usos||1) + 1 });
+        });
+      } else {
+        await db.insert('materiais_sugeridos', { nome });
+        materiaisSugeridos.push({ nome, usos: 1 });
+      }
+    }
+
     document.getElementById('p-usar-stock').addEventListener('change', e => {
       const usaStock = e.target.checked;
       document.getElementById('p-peca-texto-wrap').style.display = usaStock ? 'none' : 'block';
@@ -681,7 +749,7 @@
       document.getElementById('p-material-stock').required = usaStock;
     });
 
-    // ── Pesquisa de técnicos (intervenção) ──
+    // ── Pesquisa de técnicos (intervenção, multi) ──
     function filtrarTecnicos(q) {
       const dd = document.getElementById('i-tech-dropdown');
       q = q.toLowerCase().trim();
@@ -697,7 +765,6 @@
       ).join('');
       dd.classList.add('open');
     }
-
     document.getElementById('i-tech-search').addEventListener('input', e => filtrarTecnicos(e.target.value));
     document.getElementById('i-tech-dropdown').addEventListener('click', e => {
       const opt = e.target.closest('.tech-option');
@@ -710,7 +777,6 @@
       document.getElementById('i-tech-search').value = '';
       document.getElementById('i-tech-dropdown').classList.remove('open');
     });
-
     function renderChipsTecnicos() {
       document.getElementById('i-tech-chips').innerHTML = selecionadosIntervencao.map(c =>
         `<span class="chip-tech">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">✕</button></span>`
@@ -761,7 +827,7 @@
           <td>${horasArredondadas}h${nTecnicos>1?' × '+nTecnicos:''}</td>
           <td><div class="tecnicos-stack">${tecnicos.map(t=>`<span>${t}</span>`).join('')||'—'}</div></td>
           <td><div class="tecnicos-stack">${setores.map(s=>`<span>${s}</span>`).join('')||'—'}</div></td>
-          <td>${r.description||'—'}</td>
+          <td>${formatarDescricao(r.description)}</td>
           <td><span class="badge ${r.status==='concluida'?'badge-green':'badge-amber'}">${r.status==='concluida'?'Concluída':'Em curso'}</span></td>
           <td>
             <button class="btn btn-ghost btn-sm" onclick="editarIntervencao(${r.id})" style="margin-right:4px">Editar</button>
@@ -777,11 +843,12 @@
     async function carregarPecas() {
       const pecas = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
       const tbody = document.getElementById('tbody-pecas');
-      if (!pecas.length) { tbody.innerHTML='<tr><td colspan="5">Sem peças registadas.</td></tr>'; return; }
+      if (!pecas.length) { tbody.innerHTML='<tr><td colspan="6">Sem peças registadas.</td></tr>'; return; }
       tbody.innerHTML = pecas.map(p => `<tr>
         <td>${p.peca}</td>
         <td>${p.data ? formatarData(p.data) : '—'}</td>
         <td>${p.quantidade||1}</td>
+        <td>${p.unidade||'Unidade'}</td>
         <td>${p.colaborador||'—'}</td>
         <td>
           <button class="btn btn-ghost btn-sm" onclick="editarPeca(${p.id})" style="margin-right:4px">Editar</button>
@@ -795,7 +862,6 @@
       await db.delete('records', id);
       await carregarIntervencoes();
     }
-
     async function eliminarPeca(id) {
       if (!confirm('Apagar esta peça?')) return;
       await db.delete('os_pecas', id);
@@ -811,21 +877,21 @@
       document.getElementById('p-peca').value      = p.peca || '';
       document.getElementById('p-data').value      = p.data || '';
       document.getElementById('p-qtd').value       = p.quantidade || 1;
+      document.getElementById('p-unidade').value   = p.unidade || 'Unidade';
+      seletorPColab.reset();
       document.getElementById('p-colaborador').value = p.colaborador || '';
+      if (p.colaborador) document.getElementById('p-colab-chip').innerHTML = `<span class="chip-tech">${p.colaborador}<button type="button">✕</button></span>`;
       document.getElementById('modal-peca').classList.add('aberto');
     }
 
-    // ── EDITAR INTERVENÇÃO ──
     let recordsCache = [];
     async function editarIntervencao(id) {
       if (!recordsCache.length) recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`);
-      const r = recordsCache.find(x => x.id === id);
-      if (!r) { recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`); }
-      const rec = recordsCache.find(x => x.id === id);
+      let rec = recordsCache.find(x => x.id === id);
+      if (!rec) { recordsCache = await db.query('records', `select=*&os_id=eq.${osId}`); rec = recordsCache.find(x => x.id === id); }
       if (!rec) return;
 
       editandoRecordId = id;
-
       document.getElementById('titulo-modal-intervencao').textContent = 'Editar Intervenção';
       document.getElementById('badge-edicao').style.display = 'inline-block';
       document.getElementById('btn-submit-intervencao').textContent = 'Guardar Alterações';
@@ -864,51 +930,68 @@
     // ── Editar Tipo de Intervenção ──
     document.getElementById('btn-editar-tipo').addEventListener('click', () => {
       const atuais = osAtual.tipo_intervencao || [];
-      document.querySelectorAll('#edit-tipo-grid input[type=checkbox]').forEach(cb => {
-        cb.checked = atuais.includes(cb.value);
-      });
+      document.querySelectorAll('#edit-tipo-grid input[type=checkbox]').forEach(cb => { cb.checked = atuais.includes(cb.value); });
       document.getElementById('edit-tipo-wrap').style.display = 'block';
     });
     document.getElementById('btn-cancelar-tipo').addEventListener('click', () => {
       document.getElementById('edit-tipo-wrap').style.display = 'none';
     });
     document.getElementById('btn-guardar-tipo').addEventListener('click', async () => {
-      const selecionados = Array.from(
-        document.querySelectorAll('#edit-tipo-grid input[type=checkbox]:checked')
-      ).map(cb => cb.value);
+      const selecionados = Array.from(document.querySelectorAll('#edit-tipo-grid input[type=checkbox]:checked')).map(cb => cb.value);
       await db.update('ordens_servico', osId, { tipo_intervencao: selecionados.length ? selecionados : null, atualizado_em: new Date().toISOString() });
       document.getElementById('edit-tipo-wrap').style.display = 'none';
       await carregarOS();
     });
 
-    // Atualizar estado da obra
-    document.getElementById('btn-mudar-status').addEventListener('click', async () => {
+    // ── Atualizar estado da obra (protegido contra duplo clique) ──
+    document.getElementById('btn-mudar-status').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
       const novoStatus  = document.getElementById('sel-novo-status').value;
       const responsavel = document.getElementById('responsavel-mudanca').value || null;
       if (novoStatus === osAtual.status_atual) { alert('Estado já é o atual.'); return; }
-      const upd = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
-      if (novoStatus === 'Fechada') upd.data_fecho = dataHoje();
-      await db.update('ordens_servico', osId, upd);
-      await db.insert('os_status_log', {
-        os_id: osId, status_anterior: osAtual.status_atual,
-        status_novo: novoStatus, responsavel
-      });
-      await carregarOS(); await carregarTimeline();
-    });
 
-    document.getElementById('btn-atualizar-fisico').addEventListener('click', async () => {
-      const novoFisico = document.getElementById('sel-status-fisico').value;
-      const upd = { status_fisico: novoFisico, atualizado_em: new Date().toISOString() };
-      const nrObra = document.getElementById('campo-numero-obra').value.trim();
-      if (nrObra) upd.numero_obra = nrObra;
-      await db.update('ordens_servico', osId, upd);
-      if (novoFisico !== osAtual.status_fisico) {
-        await db.insert('os_status_fisico_log', { os_id: osId, status_fisico: novoFisico });
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A atualizar...';
+      try {
+        const upd = { status_atual: novoStatus, atualizado_em: new Date().toISOString() };
+        if (novoStatus === 'Fechada') upd.data_fecho = dataHoje();
+        await db.update('ordens_servico', osId, upd);
+        await db.insert('os_status_log', {
+          os_id: osId, status_anterior: osAtual.status_atual,
+          status_novo: novoStatus, responsavel
+        });
+        await carregarOS(); await carregarTimeline();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
       }
-      await carregarOS(); await carregarTimeline();
     });
 
-    // Modal Intervenção — abrir para CRIAR
+    document.getElementById('btn-atualizar-fisico').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
+      try {
+        const novoFisico = document.getElementById('sel-status-fisico').value;
+        const upd = { status_fisico: novoFisico, atualizado_em: new Date().toISOString() };
+        const nrObra = document.getElementById('campo-numero-obra').value.trim();
+        if (nrObra) upd.numero_obra = nrObra;
+        await db.update('ordens_servico', osId, upd);
+        if (novoFisico !== osAtual.status_fisico) {
+          await db.insert('os_status_fisico_log', { os_id: osId, status_fisico: novoFisico });
+        }
+        await carregarOS(); await carregarTimeline();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
+
+    // Modal Intervenção — criar
     const modalIntervencao = document.getElementById('modal-intervencao');
     document.getElementById('btn-nova-intervencao').addEventListener('click', () => {
       editandoRecordId = null;
@@ -929,33 +1012,37 @@
 
     document.getElementById('form-intervencao').addEventListener('submit', async ev => {
       ev.preventDefault();
-      const inicio = document.getElementById('i-inicio').value;
-      const fim    = document.getElementById('i-fim').value;
-      const [h1,m1] = inicio.split(':').map(Number);
-      const [h2,m2] = fim.split(':').map(Number);
-      let horasDecimal = (h2+m2/60)-(h1+m1/60);
-      if (horasDecimal < 0) horasDecimal += 24;
-      const horasArredondadas = arredondarHoras(horasDecimal);
-
-      const payload = {
-        equipment_id: osAtual.equipment_id,
-        os_id:        parseInt(osId),
-        shift_date:   document.getElementById('i-data').value,
-        status:       document.getElementById('i-status').value,
-        time_start:   inicio,
-        time_end:     fim,
-        hours:        horasArredondadas,
-        description:  document.getElementById('i-descricao').value.trim(),
-        continues:    false,
-      };
+      const btn = document.getElementById('btn-submit-intervencao');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
 
       try {
-        let recordId;
+        const inicio = document.getElementById('i-inicio').value;
+        const fim    = document.getElementById('i-fim').value;
+        const [h1,m1] = inicio.split(':').map(Number);
+        const [h2,m2] = fim.split(':').map(Number);
+        let horasDecimal = (h2+m2/60)-(h1+m1/60);
+        if (horasDecimal < 0) horasDecimal += 24;
+        const horasArredondadas = arredondarHoras(horasDecimal);
 
+        const payload = {
+          equipment_id: osAtual.equipment_id,
+          os_id:        parseInt(osId),
+          shift_date:   document.getElementById('i-data').value,
+          status:       document.getElementById('i-status').value,
+          time_start:   inicio,
+          time_end:     fim,
+          hours:        horasArredondadas,
+          description:  document.getElementById('i-descricao').value.trim(),
+          continues:    false,
+        };
+
+        let recordId;
         if (editandoRecordId) {
           await db.update('records', editandoRecordId, payload);
           recordId = editandoRecordId;
-
           const antigas = await db.query('record_collaborators', `select=*&record_id=eq.${recordId}`);
           for (const a of antigas) await db.delete('record_collaborators', a.id);
         } else {
@@ -977,6 +1064,9 @@
         mostrarToast('Intervenção guardada com sucesso.');
       } catch(err) {
         alert('Erro ao guardar a intervenção: '+(err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
       }
     });
 
@@ -987,11 +1077,13 @@
       document.getElementById('p-id').value = '';
       document.getElementById('p-data').value = dataHoje();
       document.getElementById('p-qtd').value = 1;
+      document.getElementById('p-unidade').value = 'Unidade';
       document.getElementById('p-usar-stock').checked = false;
       document.getElementById('p-peca-texto-wrap').style.display = 'block';
       document.getElementById('p-peca-select-wrap').style.display = 'none';
       document.getElementById('p-peca').required = true;
       document.getElementById('p-material-stock').required = false;
+      seletorPColab.reset();
       pecasCache = [];
       modalPeca.classList.add('aberto');
     });
@@ -999,52 +1091,47 @@
 
     document.getElementById('form-peca').addEventListener('submit', async ev => {
       ev.preventDefault();
-      const id = document.getElementById('p-id').value;
-      const usaStock = document.getElementById('p-usar-stock').checked;
-      const qtd = parseFloat(document.getElementById('p-qtd').value) || 1;
-      const dataAplicacao = document.getElementById('p-data').value || null;
-      const colaboradorNome = document.getElementById('p-colaborador').value || null;
+      const btn = document.getElementById('btn-submit-peca');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
 
       try {
-        let payload;
+        const id = document.getElementById('p-id').value;
+        const usaStock = document.getElementById('p-usar-stock').checked;
+        const qtd = parseFloat(document.getElementById('p-qtd').value) || 1;
+        const unidade = document.getElementById('p-unidade').value;
+        const dataAplicacao = document.getElementById('p-data').value || null;
+        const colaboradorNome = document.getElementById('p-colaborador').value || null;
 
+        let payload;
         if (usaStock) {
           const materialId = document.getElementById('p-material-stock').value;
           if (!materialId) { alert('Selecione um material do Stock.'); return; }
           const material = materiaisStock.find(m => m.id === materialId);
 
           const movimento = await db.insert('stock_movimentos', {
-            tipo: 'saida',
-            estado: 'pendente',
-            material_id: materialId,
-            quantidade: qtd,
-            data_movimento: dataAplicacao || dataHoje(),
-            departamento: 'Oficina',
+            tipo: 'saida', estado: 'pendente', material_id: materialId, quantidade: qtd,
+            data_movimento: dataAplicacao || dataHoje(), departamento: 'Oficina',
             finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} — ${equipAtual ? equipAtual.code : ''}`,
-            colaborador_nome: colaboradorNome || '',
-            observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
+            colaborador_nome: colaboradorNome || '', observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
           });
           const movId = Array.isArray(movimento) ? movimento[0].id : movimento.id;
 
           payload = {
-            os_id: parseInt(osId),
-            peca: material ? material.nome : 'Material do Stock',
-            data: dataAplicacao,
-            quantidade: qtd,
-            colaborador: colaboradorNome,
-            material_id: materialId,
-            stock_movimento_id: movId,
+            os_id: parseInt(osId), peca: material ? material.nome : 'Material do Stock',
+            data: dataAplicacao, quantidade: qtd, unidade: material ? (material.unidade||'Unidade') : unidade,
+            colaborador: colaboradorNome, material_id: materialId, stock_movimento_id: movId,
           };
         } else {
+          const nomePeca = document.getElementById('p-peca').value.trim();
           payload = {
-            os_id:       parseInt(osId),
-            peca:        document.getElementById('p-peca').value.trim(),
-            data:        dataAplicacao,
-            quantidade:  qtd,
-            colaborador: colaboradorNome,
-            material_id: null,
-            stock_movimento_id: null,
+            os_id: parseInt(osId), peca: nomePeca, data: dataAplicacao,
+            quantidade: qtd, unidade, colaborador: colaboradorNome,
+            material_id: null, stock_movimento_id: null,
           };
+          await registarMaterialSugerido(nomePeca);
         }
 
         if (id) await db.update('os_pecas', id, payload);
@@ -1053,16 +1140,19 @@
         pecasCache = [];
         modalPeca.classList.remove('aberto');
         await carregarPecas();
-
         if (usaStock) mostrarToast('Peça registada e saída pendente criada no Stock.');
       } catch(err) {
         alert('Erro ao guardar peça: '+(err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
       }
     });
 
     (async function init() {
       await carregarTecnicosBase();
       await carregarMateriaisStock();
+      await carregarMateriaisSugeridos();
       await carregarOS();
       await carregarTimeline();
       await carregarIntervencoes();
