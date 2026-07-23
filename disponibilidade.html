@@ -6,45 +6,87 @@
   <title>Disponibilidade — Danmo Oficina</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
-    .chart-wrap { position:relative; height:340px; margin-bottom:10px; }
+    .chart-wrap { position:relative; height:360px; margin-bottom:6px; }
+    .chart-wrap-sm { position:relative; height:280px; margin-bottom:6px; }
     .aviso-carregar {
       display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text2);
       padding:10px 14px; background:rgba(245,158,11,.06); border:1px solid rgba(245,158,11,.2);
       border-radius:8px; margin-bottom:14px;
     }
-    .legenda-estados { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; font-size:12px; }
-    .legenda-item { display:flex; align-items:center; gap:5px; }
-    .legenda-cor { width:11px; height:11px; border-radius:3px; }
-    .cor-A  { background:#22c55e; }
-    .cor-BD { background:#ef4444; }
-    .cor-AC { background:#f97316; }
-    .cor-TY { background:#3b82f6; }
-    .cor-PM { background:#f59e0b; }
-    .cor-SP { background:#64748b; }
-    .cor-vazio { background:rgba(255,255,255,.06); }
+
+    /* KPI estado clicáveis */
+    .kpi-estados-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px; }
+    .kpi-estado-card {
+      background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius);
+      padding:16px; cursor:pointer; transition:all .15s; border-top:3px solid transparent;
+      opacity:1;
+    }
+    .kpi-estado-card:hover { transform:translateY(-2px); }
+    .kpi-estado-card.inativo { opacity:.35; }
+    .kpi-estado-card .kpi-label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+    .kpi-estado-card .kpi-value { font-size:24px; font-weight:700; }
+    .kpi-estado-card.est-A  { border-top-color:#22c55e; } .kpi-estado-card.est-A  .kpi-value { color:#22c55e; }
+    .kpi-estado-card.est-BD { border-top-color:#ef4444; } .kpi-estado-card.est-BD .kpi-value { color:#ef4444; }
+    .kpi-estado-card.est-AC { border-top-color:#f97316; } .kpi-estado-card.est-AC .kpi-value { color:#f97316; }
+    .kpi-estado-card.est-TY { border-top-color:#3b82f6; } .kpi-estado-card.est-TY .kpi-value { color:#3b82f6; }
+    .kpi-estado-card.est-PM { border-top-color:#f59e0b; } .kpi-estado-card.est-PM .kpi-value { color:#f59e0b; }
+    .kpi-estado-card.est-SP { border-top-color:#64748b; } .kpi-estado-card.est-SP .kpi-value { color:#64748b; }
 
     /* Heatmap */
-    .heatmap-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+    .heatmap-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:8px; max-height:640px; overflow-y:auto; }
     table.heatmap { border-collapse:collapse; font-size:11px; white-space:nowrap; }
     table.heatmap th, table.heatmap td { border:1px solid var(--border); padding:0; text-align:center; }
     table.heatmap thead th {
-      background:var(--navy3); color:var(--text2); font-size:10px; font-weight:700;
-      padding:6px 4px; position:sticky; top:0; z-index:2;
+      background:var(--navy3); color:var(--text2); font-size:9px; font-weight:700;
+      padding:4px 3px; position:sticky; top:0; z-index:2;
     }
     table.heatmap .col-equip {
       position:sticky; left:0; background:var(--navy2); z-index:3;
-      text-align:left; padding:6px 10px; font-weight:600; color:var(--text);
-      min-width:140px; max-width:160px; overflow:hidden; text-overflow:ellipsis;
+      text-align:left; padding:4px 8px; min-width:120px; max-width:130px;
     }
+    table.heatmap .col-equip .cod { font-weight:700; color:var(--text); font-size:11px; display:block; }
+    table.heatmap .col-equip .grp { font-size:9px; color:var(--text2); display:block; }
     table.heatmap thead .col-equip { z-index:4; }
-    table.heatmap td.dia-cel { width:22px; height:22px; cursor:default; }
+    table.heatmap .grupo-header td {
+      background:var(--navy3); color:var(--amber); font-weight:700; font-size:10px;
+      text-align:left; padding:4px 8px; text-transform:uppercase; letter-spacing:.5px;
+      position:sticky; left:0;
+    }
+    table.heatmap td.dia-cel { width:19px; height:19px; cursor:pointer; }
+    table.heatmap td.dia-cel:hover { outline:2px solid #fff; outline-offset:-2px; }
     table.heatmap td.dia-cel.hoje-col { box-shadow: inset 0 0 0 2px var(--amber); }
+    table.heatmap td.dia-cel.dimmed { opacity:.15; }
+    .cor-A  { background:#22c55e; } .cor-BD { background:#ef4444; } .cor-AC { background:#f97316; }
+    .cor-TY { background:#3b82f6; } .cor-PM { background:#f59e0b; } .cor-SP { background:#64748b; }
+    .cor-vazio { background:rgba(255,255,255,.04); }
 
     .rank-table td, .rank-table th { font-size:13px; }
     .barra-mini-wrap { display:flex; align-items:center; gap:8px; }
     .barra-mini-bg { flex:1; height:7px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; }
     .barra-mini-fill { height:100%; border-radius:4px; }
+
+    /* Multi-select meses */
+    .mes-multiselect { position:relative; }
+    .mes-multiselect-btn {
+      width:100%; text-align:left; background:var(--navy); border:1px solid var(--border);
+      border-radius:6px; color:var(--text); padding:9px 12px; font-size:14px; cursor:pointer;
+    }
+    .mes-dropdown {
+      position:absolute; top:100%; left:0; right:0; background:var(--navy3); border:1px solid var(--border);
+      border-radius:6px; z-index:60; margin-top:2px; padding:8px; display:none; max-height:220px; overflow-y:auto;
+    }
+    .mes-dropdown.aberto { display:block; }
+    .mes-dropdown label { display:flex; align-items:center; gap:8px; padding:5px 4px; font-size:13px; font-weight:normal; text-transform:none; cursor:pointer; color:var(--text); }
+    .mes-dropdown label input { width:auto; }
+    .mes-dropdown hr { border-color:var(--border); margin:4px 0; }
+
+    /* Modal detalhe do dia */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; z-index:300; }
+    .modal-overlay.aberto { display:flex; }
+    .modal-box-lg { background:var(--navy2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:100%; max-width:700px; max-height:85vh; overflow-y:auto; box-shadow:var(--shadow); }
+    .modal-close-btn { float:right; background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -52,7 +94,7 @@
 
   <main class="main">
     <h1 class="page-title">Disponibilidade de Equipamentos</h1>
-    <p class="page-sub">Relatório de disponibilidade e horas trabalhadas — dados importados + registados pelo sistema</p>
+    <p class="page-sub">Relatório de Disponibilidade de Equipamentos</p>
 
     <!-- Filtros -->
     <div class="card">
@@ -60,24 +102,30 @@
         <div class="form-group">
           <label>Ano</label>
           <select id="f-ano">
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025" selected>2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
+            <option value="2022">2022</option><option value="2023">2023</option>
+            <option value="2024">2024</option><option value="2025">2025</option>
+            <option value="2026" selected>2026</option><option value="2027">2027</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Mês (para vista diária)</label>
-          <select id="f-mes">
-            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-            <option value="3">Março</option><option value="4">Abril</option>
-            <option value="5">Maio</option><option value="6">Junho</option>
-            <option value="7">Julho</option><option value="8">Agosto</option>
-            <option value="9">Setembro</option><option value="10">Outubro</option>
-            <option value="11">Novembro</option><option value="12">Dezembro</option>
-          </select>
+        <div class="form-group mes-multiselect">
+          <label>Mês (vista diária)</label>
+          <div class="mes-multiselect-btn" id="mes-btn">Mês actual</div>
+          <div class="mes-dropdown" id="mes-dropdown">
+            <label><input type="checkbox" id="mes-todos" value="0" /> Todos os meses</label>
+            <hr/>
+            <label><input type="checkbox" class="mes-opt" value="1" /> Janeiro</label>
+            <label><input type="checkbox" class="mes-opt" value="2" /> Fevereiro</label>
+            <label><input type="checkbox" class="mes-opt" value="3" /> Março</label>
+            <label><input type="checkbox" class="mes-opt" value="4" /> Abril</label>
+            <label><input type="checkbox" class="mes-opt" value="5" /> Maio</label>
+            <label><input type="checkbox" class="mes-opt" value="6" /> Junho</label>
+            <label><input type="checkbox" class="mes-opt" value="7" /> Julho</label>
+            <label><input type="checkbox" class="mes-opt" value="8" /> Agosto</label>
+            <label><input type="checkbox" class="mes-opt" value="9" /> Setembro</label>
+            <label><input type="checkbox" class="mes-opt" value="10" /> Outubro</label>
+            <label><input type="checkbox" class="mes-opt" value="11" /> Novembro</label>
+            <label><input type="checkbox" class="mes-opt" value="12" /> Dezembro</label>
+          </div>
         </div>
         <div class="form-group">
           <label>Categoria</label>
@@ -95,66 +143,72 @@
 
     <div class="aviso-carregar" id="aviso-carregar" style="display:none">
       <div class="spinner" style="width:16px;height:16px;margin:0;border-width:2px"></div>
-      A carregar dados do ano seleccionado — pode demorar alguns segundos consoante o volume...
+      A carregar dados...
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-grid" id="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">Equipamentos no Filtro</div><div class="kpi-value" id="k-total-equip">—</div></div>
-      <div class="kpi-card green"><div class="kpi-label">Disponibilidade Média (Ano)</div><div class="kpi-value" id="k-disp-media">—</div></div>
-      <div class="kpi-card red"><div class="kpi-label">Avaria Média (Ano)</div><div class="kpi-value" id="k-bd-media">—</div></div>
-      <div class="kpi-card blue"><div class="kpi-label">Horas Trabalhadas (Ano)</div><div class="kpi-value" id="k-horas-trabalhadas">—</div></div>
+    <!-- KPI cards clicáveis por estado (também funcionam como legenda) -->
+    <div class="kpi-estados-grid" id="kpi-estados-grid">
+      <div class="kpi-estado-card est-A" data-estado="A"><div class="kpi-label">Disponível</div><div class="kpi-value" id="k-A">—</div></div>
+      <div class="kpi-estado-card est-BD" data-estado="BD"><div class="kpi-label">Avariada</div><div class="kpi-value" id="k-BD">—</div></div>
+      <div class="kpi-estado-card est-AC" data-estado="AC"><div class="kpi-label">Acidentada</div><div class="kpi-value" id="k-AC">—</div></div>
+      <div class="kpi-estado-card est-TY" data-estado="TY"><div class="kpi-label">Pneumático</div><div class="kpi-value" id="k-TY">—</div></div>
+      <div class="kpi-estado-card est-PM" data-estado="PM"><div class="kpi-label">Revisão/Manutenção</div><div class="kpi-value" id="k-PM">—</div></div>
+      <div class="kpi-estado-card est-SP" data-estado="SP"><div class="kpi-label">Aguarda Acessório</div><div class="kpi-value" id="k-SP">—</div></div>
     </div>
 
-    <!-- Legenda -->
-    <div class="legenda-estados">
-      <div class="legenda-item"><div class="legenda-cor cor-A"></div>Disponível (A)</div>
-      <div class="legenda-item"><div class="legenda-cor cor-BD"></div>Avariada (BD)</div>
-      <div class="legenda-item"><div class="legenda-cor cor-AC"></div>Acidentada (AC)</div>
-      <div class="legenda-item"><div class="legenda-cor cor-TY"></div>Pneumático (TY)</div>
-      <div class="legenda-item"><div class="legenda-cor cor-PM"></div>Revisão/Manutenção (PM)</div>
-      <div class="legenda-item"><div class="legenda-cor cor-SP"></div>Aguarda Acessório (SP)</div>
-      <div class="legenda-item"><div class="legenda-cor cor-vazio"></div>Sem dados</div>
-    </div>
-
-    <!-- Gráfico mensal -->
+    <!-- Gráfico anual agrupado -->
     <div class="card">
-      <div class="card-title">Disponibilidade por Mês (%)</div>
+      <div class="card-title" id="titulo-grafico-anual">Disponibilidade Anual (%) — 2026</div>
       <div class="chart-wrap">
-        <canvas id="chartMensal"></canvas>
+        <canvas id="chartAnual"></canvas>
+      </div>
+    </div>
+
+    <!-- Comparação com ano anterior -->
+    <div class="card">
+      <div class="card-title" id="titulo-comparacao">Comparação de Disponibilidade — Ano vs Ano Anterior</div>
+      <div class="chart-wrap-sm">
+        <canvas id="chartComparacao"></canvas>
       </div>
     </div>
 
     <!-- Vista diária (heatmap) -->
     <div class="card">
       <div class="flex-between">
-        <div class="card-title" style="margin-bottom:0" id="titulo-heatmap">Vista Diária — Mês</div>
-        <span class="text-muted" style="font-size:12px">Cada célula mostra o estado dominante desse dia</span>
+        <div class="card-title" style="margin-bottom:0" id="titulo-heatmap">—</div>
+        <span class="text-muted" style="font-size:12px">Clique numa célula para ver o detalhe</span>
       </div>
       <div class="heatmap-wrap mt-16" id="heatmap-container">
         <p class="text-muted" style="padding:20px">Aplica os filtros para carregar.</p>
       </div>
     </div>
 
-    <!-- Top piores / melhores -->
+    <!-- Máquinas mais paradas -->
     <div class="card">
-      <div class="card-title">Ranking de Disponibilidade — Equipamentos (Ano)</div>
+      <div class="card-title">Máquinas Mais Paradas no Período</div>
       <div class="table-wrap">
         <table class="rank-table">
-          <thead><tr><th>Equipamento</th><th>Categoria</th><th>Grupo</th><th>% Disponível</th><th>% Avariada</th></tr></thead>
+          <thead><tr><th>Equipamento</th><th>Categoria</th><th>Grupo</th><th>% Parada (BD+AC+TY+SP)</th><th>Dias Parados (aprox.)</th></tr></thead>
           <tbody id="tbody-ranking"><tr><td colspan="5" class="text-muted">Aplica os filtros para carregar.</td></tr></tbody>
         </table>
       </div>
     </div>
+  </main>
 
-    <!-- Horas trabalhadas por mês -->
-    <div class="card">
-      <div class="card-title">Horas Trabalhadas por Mês</div>
-      <div class="chart-wrap" style="height:260px">
-        <canvas id="chartHorimetro"></canvas>
+  <!-- Modal detalhe do dia -->
+  <div class="modal-overlay" id="modal-dia">
+    <div class="modal-box-lg">
+      <button class="modal-close-btn" onclick="fecharModalDia()">×</button>
+      <div class="card-title" id="modal-dia-titulo">—</div>
+      <div id="modal-dia-resumo" style="margin-bottom:16px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Hora</th><th>Técnicos</th><th>Descrição</th><th>Nº Obra</th></tr></thead>
+          <tbody id="modal-dia-tbody"><tr><td colspan="4" class="text-muted">A carregar...</td></tr></tbody>
+        </table>
       </div>
     </div>
-  </main>
+  </div>
 
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
@@ -163,15 +217,26 @@
   <script src="nav.js"></script>
   <script>
     renderNavbarOficina('disponibilidade');
+    Chart.register(ChartDataLabels);
 
     const ESTADO_LABEL = { A:'Disponível', BD:'Avariada', AC:'Acidentada', TY:'Pneumático', PM:'Revisão/Manutenção', SP:'Aguarda Acessório' };
     const ESTADO_COR   = { A:'#22c55e', BD:'#ef4444', AC:'#f97316', TY:'#3b82f6', PM:'#f59e0b', SP:'#64748b' };
-    const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const MESES_PT_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const MESES_PT_LONGO = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-    let todosEquip = [], todasCategorias = [], todosGrupos = [];
-    let chartMensal = null, chartHorimetro = null;
+    // Mapa estado físico (sistema) -> categoria CdM
+    const MAPA_CDM = {
+      'Avariada':'BD', 'Acidentada':'AC', 'Pneumático':'TY',
+      'Revisão/Manutenção':'PM', 'Inspeção':'PM', 'Aguarda Acessório':'SP', 'Concluído':'A',
+    };
+    const PRIORIDADE_FISICO = ['Acidentada','Avariada','Pneumático','Aguarda Acessório','Revisão/Manutenção','Inspeção','Concluído'];
 
-    // Busca todas as páginas de um resultado (a API entrega no máximo 1000 linhas por pedido)
+    let todosEquip = [], todasCategorias = [], todosGrupos = [], colaboradoresCache = [];
+    let chartAnual = null, chartComparacao = null;
+    let estadosAtivos = new Set(['A','BD','AC','TY','PM','SP']); // filtro de legenda clicável
+    let ultimoDisponibilidade = []; // cache do dataset actual, para clique na legenda re-renderizar sem novo fetch
+    let ultimoEquipFiltrados = [];
+
     async function fetchAllRows(table, queryStringBase) {
       let all = [];
       let offset = 0;
@@ -188,82 +253,147 @@
 
     function diasNoMes(ano, mes) { return new Date(ano, mes, 0).getDate(); }
 
+    // ═══ Multi-select de meses ═══
+    function mesesSelecionados() {
+      const todosMarcado = document.getElementById('mes-todos').checked;
+      if (todosMarcado) return [1,2,3,4,5,6,7,8,9,10,11,12];
+      const marcados = Array.from(document.querySelectorAll('.mes-opt:checked')).map(el => parseInt(el.value));
+      return marcados.length ? marcados : [new Date().getMonth() + 1];
+    }
+    function atualizarLabelMeses() {
+      const sel = mesesSelecionados();
+      const btn = document.getElementById('mes-btn');
+      if (sel.length === 12) btn.textContent = 'Todos os meses';
+      else if (sel.length === 1) btn.textContent = MESES_PT_LONGO[sel[0]];
+      else btn.textContent = sel.map(m => MESES_PT_ABREV[m-1]).join(', ');
+    }
+    document.getElementById('mes-btn').addEventListener('click', () => {
+      document.getElementById('mes-dropdown').classList.toggle('aberto');
+    });
+    document.getElementById('mes-todos').addEventListener('change', (e) => {
+      document.querySelectorAll('.mes-opt').forEach(cb => cb.checked = false);
+      atualizarLabelMeses();
+    });
+    document.querySelectorAll('.mes-opt').forEach(cb => cb.addEventListener('change', () => {
+      if (cb.checked) document.getElementById('mes-todos').checked = false;
+      atualizarLabelMeses();
+    }));
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.mes-multiselect')) document.getElementById('mes-dropdown').classList.remove('aberto');
+    });
+
     async function carregarListasBase() {
       todosEquip      = await db.query('equipment', 'select=*&active=eq.true');
       todasCategorias = await db.query('categorias_equipamento', 'select=*&ativo=eq.true&order=nome.asc');
       todosGrupos     = await db.query('grupos_equipamento', 'select=*&ativo=eq.true&order=nome.asc');
+      colaboradoresCache = await db.query('collaborators', 'select=id,name,code');
 
       const selCat = document.getElementById('f-categoria');
       todasCategorias.forEach(c => selCat.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.nome}</option>`));
-
       document.getElementById('f-categoria').addEventListener('change', atualizarGrupos);
       atualizarGrupos();
 
-      // Mês por defeito = mês actual
-      document.getElementById('f-mes').value = new Date().getMonth() + 1;
+      const mesAtual = new Date().getMonth() + 1;
+      const cbAtual = document.querySelector(`.mes-opt[value="${mesAtual}"]`);
+      if (cbAtual) cbAtual.checked = true;
+      atualizarLabelMeses();
     }
 
     function atualizarGrupos() {
       const catId = document.getElementById('f-categoria').value;
       const selGrupo = document.getElementById('f-grupo');
       const filtrados = catId ? todosGrupos.filter(g => String(g.categoria_id) === catId) : todosGrupos;
-      selGrupo.innerHTML = '<option value="">Todos</option>' +
-        filtrados.map(g => `<option value="${g.id}">${g.nome}</option>`).join('');
+      selGrupo.innerHTML = '<option value="">Todos</option>' + filtrados.map(g => `<option value="${g.id}">${g.nome}</option>`).join('');
     }
 
     function equipamentosFiltrados() {
       const catId = document.getElementById('f-categoria').value;
       const grupoId = document.getElementById('f-grupo').value;
       let lista = [...todosEquip];
-      if (catId) {
-        const cat = todasCategorias.find(c => String(c.id) === catId);
-        if (cat) lista = lista.filter(e => e.fleet_type === cat.nome);
-      }
-      if (grupoId) {
-        const grupo = todosGrupos.find(g => String(g.id) === grupoId);
-        if (grupo) lista = lista.filter(e => e.group_name === grupo.nome);
-      }
+      if (catId) { const cat = todasCategorias.find(c => String(c.id) === catId); if (cat) lista = lista.filter(e => e.fleet_type === cat.nome); }
+      if (grupoId) { const grupo = todosGrupos.find(g => String(g.id) === grupoId); if (grupo) lista = lista.filter(e => e.group_name === grupo.nome); }
       return lista;
+    }
+
+    // ═══ Cálculo AO VIVO (para meses sem importação, ex. 2026) ═══
+    function estadoParaCdm(statusFisico) { return MAPA_CDM[statusFisico] || 'A'; }
+
+    function computeLive(equipIds, ano, mes, osDoAno) {
+      const hoje = new Date();
+      const anoAtual = hoje.getFullYear(), mesAtual = hoje.getMonth()+1, diaAtual = hoje.getDate();
+      let diasValidos;
+      if (ano < anoAtual) diasValidos = diasNoMes(ano, mes);
+      else if (ano === anoAtual) {
+        if (mes < mesAtual) diasValidos = diasNoMes(ano, mes);
+        else if (mes === mesAtual) diasValidos = diaAtual;
+        else diasValidos = 0;
+      } else diasValidos = 0;
+
+      const resultado = [];
+      if (diasValidos === 0) return resultado;
+
+      equipIds.forEach(eqId => {
+        const osDoEquip = osDoAno.filter(o => o.equipment_id === eqId);
+        for (let dia = 1; dia <= diasValidos; dia++) {
+          const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+          const abertasNoDia = osDoEquip.filter(o => {
+            if (o.status_atual === 'Fechada') return o.data_fecho && o.data_fecho >= dataStr && o.data_abertura <= dataStr;
+            return o.data_abertura <= dataStr && (!o.data_fecho || o.data_fecho >= dataStr);
+          });
+          let estadoFisico = 'Concluído';
+          if (abertasNoDia.length) {
+            let melhorIdx = 999;
+            abertasNoDia.forEach(o => {
+              const idx = PRIORIDADE_FISICO.indexOf(o.status_fisico);
+              if (idx !== -1 && idx < melhorIdx) { melhorIdx = idx; estadoFisico = o.status_fisico; }
+            });
+          }
+          resultado.push({ equipment_id: eqId, mes, dia, estado: estadoParaCdm(estadoFisico), horas: 24 });
+        }
+      });
+      return resultado;
+    }
+
+    // Obtém disponibilidade do ano inteiro, combinando histórico importado + cálculo ao vivo nos meses em falta
+    async function obterDisponibilidadeAno(ano, equipIds) {
+      const idsStr = equipIds.join(',');
+      const historico = await fetchAllRows('disponibilidade_historico', `select=equipment_id,mes,dia,estado,horas&ano=eq.${ano}&equipment_id=in.(${idsStr})`);
+
+      const mesesComHistorico = new Set(historico.map(r => r.mes));
+      const mesesEmFalta = [];
+      for (let m = 1; m <= 12; m++) if (!mesesComHistorico.has(m)) mesesEmFalta.push(m);
+
+      let liveRows = [];
+      if (mesesEmFalta.length) {
+        const dataIni = `${ano}-01-01`, dataFim = `${ano}-12-31`;
+        const osDoAno = await fetchAllRows('ordens_servico', `select=id,equipment_id,status_atual,status_fisico,data_abertura,data_fecho&equipment_id=in.(${idsStr})&data_abertura=lte.${dataFim}`);
+        const osRelevantes = osDoAno.filter(o => !o.data_fecho || o.data_fecho >= dataIni);
+        mesesEmFalta.forEach(m => {
+          liveRows = liveRows.concat(computeLive(equipIds, ano, m, osRelevantes));
+        });
+      }
+      return historico.concat(liveRows);
     }
 
     async function aplicarFiltros() {
       const ano = parseInt(document.getElementById('f-ano').value);
-      const mes = parseInt(document.getElementById('f-mes').value);
       const equipFiltrados = equipamentosFiltrados();
       const equipIds = equipFiltrados.map(e => e.id);
+      ultimoEquipFiltrados = equipFiltrados;
 
-      document.getElementById('k-total-equip').textContent = equipFiltrados.length;
-
-      if (!equipIds.length) {
-        mostrarToast('Nenhum equipamento corresponde ao filtro.', '', true);
-        return;
-      }
+      if (!equipIds.length) { mostrarToast('Nenhum equipamento corresponde ao filtro.', '', true); return; }
 
       document.getElementById('aviso-carregar').style.display = 'flex';
-
       try {
-        const idsStr = equipIds.join(',');
+        const disponibilidade = await obterDisponibilidadeAno(ano, equipIds);
+        const disponibilidadeAnoAnterior = await obterDisponibilidadeAno(ano - 1, equipIds);
+        ultimoDisponibilidade = disponibilidade;
 
-        // ── Disponibilidade do ano inteiro (para gráfico mensal + ranking) ──
-        const disponibilidade = await fetchAllRows(
-          'disponibilidade_historico',
-          `select=equipment_id,mes,dia,estado,horas&ano=eq.${ano}&equipment_id=in.(${idsStr})`
-        );
-
-        // ── Horímetro do ano (para horas trabalhadas) ──
-        const dataIniAno = `${ano}-01-01`;
-        const dataFimAno = `${ano}-12-31`;
-        const leiturasHorimetro = await fetchAllRows(
-          'equipment_hora_log',
-          `select=equipment_id,data_leitura,hora&equipment_id=in.(${idsStr})&data_leitura=gte.${dataIniAno}&data_leitura=lte.${dataFimAno}&order=data_leitura.asc`
-        );
-
-        renderKPIs(disponibilidade, leiturasHorimetro);
-        renderGraficoMensal(disponibilidade);
-        renderHeatmap(disponibilidade, equipFiltrados, ano, mes);
+        renderKPIs(disponibilidade);
+        renderGraficoAnual(disponibilidade, ano);
+        renderComparacao(disponibilidade, disponibilidadeAnoAnterior, ano);
+        renderHeatmap(disponibilidade, equipFiltrados, ano);
         renderRanking(disponibilidade, equipFiltrados);
-        renderGraficoHorimetro(leiturasHorimetro, ano);
-
       } catch (err) {
         console.error(err);
         mostrarToast('Erro ao carregar dados.', err.message || '', true);
@@ -272,195 +402,304 @@
       }
     }
 
-    // ── KPIs ──
-    function renderKPIs(disponibilidade, leiturasHorimetro) {
-      let totalHoras = 0;
-      let horasA = 0, horasBD = 0;
-      disponibilidade.forEach(r => {
-        totalHoras += parseFloat(r.horas) || 0;
-        if (r.estado === 'A') horasA += parseFloat(r.horas) || 0;
-        if (r.estado === 'BD') horasBD += parseFloat(r.horas) || 0;
+    // ═══ KPIs / legenda clicável ═══
+    function renderKPIs(disponibilidade) {
+      const totais = { A:0, BD:0, AC:0, TY:0, PM:0, SP:0 };
+      let totalGeral = 0;
+      disponibilidade.forEach(r => { const h = parseFloat(r.horas)||0; totais[r.estado] = (totais[r.estado]||0) + h; totalGeral += h; });
+      Object.keys(ESTADO_LABEL).forEach(est => {
+        document.getElementById('k-'+est).textContent = totalGeral ? Math.round(totais[est]/totalGeral*1000)/10 + '%' : '—';
       });
-      document.getElementById('k-disp-media').textContent = totalHoras ? Math.round(horasA/totalHoras*1000)/10 + '%' : '—';
-      document.getElementById('k-bd-media').textContent   = totalHoras ? Math.round(horasBD/totalHoras*1000)/10 + '%' : '—';
-
-      // Horas trabalhadas: por equipamento, max leitura - min leitura no ano
-      const porEquip = {};
-      leiturasHorimetro.forEach(l => {
-        if (!porEquip[l.equipment_id]) porEquip[l.equipment_id] = { min: l.hora, max: l.hora };
-        porEquip[l.equipment_id].min = Math.min(porEquip[l.equipment_id].min, l.hora);
-        porEquip[l.equipment_id].max = Math.max(porEquip[l.equipment_id].max, l.hora);
-      });
-      let totalTrabalhadas = 0;
-      Object.values(porEquip).forEach(v => totalTrabalhadas += (v.max - v.min));
-      document.getElementById('k-horas-trabalhadas').textContent = Math.round(totalTrabalhadas).toLocaleString('pt-PT') + 'h';
     }
 
-    // ── Gráfico mensal empilhado (%) ──
-    function renderGraficoMensal(disponibilidade) {
+    document.querySelectorAll('.kpi-estado-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const estado = card.dataset.estado;
+        if (estadosAtivos.has(estado)) estadosAtivos.delete(estado); else estadosAtivos.add(estado);
+        if (estadosAtivos.size === 0) estadosAtivos = new Set(['A','BD','AC','TY','PM','SP']); // não deixar tudo apagado
+        document.querySelectorAll('.kpi-estado-card').forEach(c => {
+          c.classList.toggle('inativo', !estadosAtivos.has(c.dataset.estado));
+        });
+        aplicarFiltroLegendaAoGrafico();
+        aplicarFiltroLegendaAoHeatmap();
+      });
+    });
+
+    function aplicarFiltroLegendaAoGrafico() {
+      if (!chartAnual) return;
+      chartAnual.data.datasets.forEach(ds => {
+        ds.backgroundColor = estadosAtivos.has(ds._estado) ? ESTADO_COR[ds._estado] : 'rgba(255,255,255,0.06)';
+      });
+      chartAnual.update();
+    }
+    function aplicarFiltroLegendaAoHeatmap() {
+      document.querySelectorAll('table.heatmap td.dia-cel').forEach(td => {
+        const est = td.dataset.estado;
+        if (!est) { td.classList.remove('dimmed'); return; }
+        td.classList.toggle('dimmed', !estadosAtivos.has(est));
+      });
+    }
+
+    // ═══ Gráfico anual agrupado ═══
+    function renderGraficoAnual(disponibilidade, ano) {
+      document.getElementById('titulo-grafico-anual').textContent = `Disponibilidade Anual (%) — ${ano}`;
       const porMes = {};
-      for (let m = 1; m <= 12; m++) porMes[m] = { A:0, BD:0, AC:0, TY:0, PM:0, SP:0, total:0 };
+      for (let m=1;m<=12;m++) porMes[m] = { A:0,BD:0,AC:0,TY:0,PM:0,SP:0,total:0 };
       disponibilidade.forEach(r => {
-        const h = parseFloat(r.horas) || 0;
+        const h = parseFloat(r.horas)||0;
         if (!porMes[r.mes]) return;
-        porMes[r.mes][r.estado] = (porMes[r.mes][r.estado] || 0) + h;
+        porMes[r.mes][r.estado] = (porMes[r.mes][r.estado]||0)+h;
         porMes[r.mes].total += h;
       });
 
-      const labels = MESES_PT;
-      const datasets = ['A','BD','AC','TY','PM','SP'].map(estado => ({
+      const datasets = Object.keys(ESTADO_LABEL).map(estado => ({
         label: ESTADO_LABEL[estado],
         data: Object.values(porMes).map(m => m.total ? Math.round(m[estado]/m.total*1000)/10 : 0),
-        backgroundColor: ESTADO_COR[estado],
+        backgroundColor: estadosAtivos.has(estado) ? ESTADO_COR[estado] : 'rgba(255,255,255,0.06)',
+        _estado: estado,
       }));
 
-      if (chartMensal) chartMensal.destroy();
-      const ctx = document.getElementById('chartMensal').getContext('2d');
-      chartMensal = new Chart(ctx, {
+      if (chartAnual) chartAnual.destroy();
+      const ctx = document.getElementById('chartAnual').getContext('2d');
+      chartAnual = new Chart(ctx, {
         type: 'bar',
-        data: { labels, datasets },
+        data: { labels: MESES_PT_ABREV, datasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
-            x: { stacked: true, ticks:{color:'#999'}, grid:{display:false} },
-            y: { stacked: true, max:100, ticks:{color:'#999', callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.05)'} },
+            x: { ticks:{color:'#999'}, grid:{display:false} },
+            y: { max:100, ticks:{color:'#999', callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.05)'} },
           },
           plugins: {
-            legend: { position:'bottom', labels:{color:'#ccc', font:{size:11}} },
+            legend: { display:false },
+            datalabels: {
+              display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 4,
+              color:'#fff', font:{size:8, weight:'bold'}, anchor:'end', align:'top', rotation:-90,
+              formatter: v => v+'%',
+            },
             tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%` } },
           }
         }
       });
     }
 
-    // ── Heatmap diário ──
-    function renderHeatmap(disponibilidade, equipFiltrados, ano, mes) {
-      const nDias = diasNoMes(ano, mes);
-      document.getElementById('titulo-heatmap').textContent = `Vista Diária — ${['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes]} ${ano}`;
-
-      const rowsDoMes = disponibilidade.filter(r => r.mes === mes);
-      const mapa = {}; // equipment_id -> { dia -> {estado: horas} }
-      rowsDoMes.forEach(r => {
-        if (!mapa[r.equipment_id]) mapa[r.equipment_id] = {};
-        if (!mapa[r.equipment_id][r.dia]) mapa[r.equipment_id][r.dia] = {};
-        mapa[r.equipment_id][r.dia][r.estado] = (mapa[r.equipment_id][r.dia][r.estado] || 0) + (parseFloat(r.horas)||0);
-      });
-
-      const hoje = new Date();
-      const ehMesAtual = hoje.getFullYear() === ano && (hoje.getMonth()+1) === mes;
-      const diaHoje = hoje.getDate();
-
-      let theadDias = '';
-      for (let d = 1; d <= nDias; d++) theadDias += `<th>${d}</th>`;
-
-      let corpo = '';
-      equipFiltrados
-        .sort((a,b) => (a.code||'').localeCompare(b.code||''))
-        .forEach(eq => {
-          let linha = `<tr><td class="col-equip" title="${eq.code} — ${eq.fleet_type||''}">${eq.code}</td>`;
-          for (let d = 1; d <= nDias; d++) {
-            const diaData = mapa[eq.id] && mapa[eq.id][d];
-            let cor = 'cor-vazio', titulo = 'Sem dados';
-            if (diaData) {
-              let melhorEstado = null, melhorHoras = -1;
-              Object.entries(diaData).forEach(([estado, horas]) => {
-                if (horas > melhorHoras) { melhorHoras = horas; melhorEstado = estado; }
-              });
-              cor = 'cor-' + melhorEstado;
-              titulo = Object.entries(diaData).map(([e,h]) => `${ESTADO_LABEL[e]}: ${h}h`).join(' | ');
-            }
-            const classeHoje = (ehMesAtual && d === diaHoje) ? ' hoje-col' : '';
-            linha += `<td class="dia-cel ${cor}${classeHoje}" title="${eq.code} — Dia ${d}: ${titulo}"></td>`;
-          }
-          linha += '</tr>';
-          corpo += linha;
-        });
-
-      const html = `<table class="heatmap">
-        <thead><tr><th class="col-equip">Equipamento</th>${theadDias}</tr></thead>
-        <tbody>${corpo}</tbody>
-      </table>`;
-
-      document.getElementById('heatmap-container').innerHTML = html;
-    }
-
-    // ── Ranking ──
-    function renderRanking(disponibilidade, equipFiltrados) {
-      const mapaEquip = {}; equipFiltrados.forEach(e => mapaEquip[e.id] = e);
-      const porEquip = {};
+    // ═══ Comparação com ano anterior (Disponível %) ═══
+    function calcularPctMensal(disponibilidade, estado) {
+      const porMes = {};
+      for (let m=1;m<=12;m++) porMes[m] = { alvo:0, total:0 };
       disponibilidade.forEach(r => {
-        if (!porEquip[r.equipment_id]) porEquip[r.equipment_id] = { total:0, A:0, BD:0 };
-        const h = parseFloat(r.horas) || 0;
-        porEquip[r.equipment_id].total += h;
-        if (r.estado === 'A') porEquip[r.equipment_id].A += h;
-        if (r.estado === 'BD') porEquip[r.equipment_id].BD += h;
+        const h = parseFloat(r.horas)||0;
+        porMes[r.mes].total += h;
+        if (r.estado === estado) porMes[r.mes].alvo += h;
       });
-
-      const linhas = Object.entries(porEquip)
-        .map(([id, v]) => ({ eq: mapaEquip[id], ...v }))
-        .filter(l => l.eq && l.total > 0)
-        .map(l => ({ ...l, pctA: Math.round(l.A/l.total*1000)/10, pctBD: Math.round(l.BD/l.total*1000)/10 }))
-        .sort((a,b) => a.pctA - b.pctA); // piores primeiro
-
-      const tbody = document.getElementById('tbody-ranking');
-      if (!linhas.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Sem dados no período.</td></tr>'; return; }
-
-      tbody.innerHTML = linhas.slice(0, 30).map(l => `<tr>
-        <td>${l.eq.code}</td>
-        <td>${l.eq.fleet_type||'—'}</td>
-        <td>${l.eq.group_name||'—'}</td>
-        <td>
-          <div class="barra-mini-wrap">
-            <div class="barra-mini-bg"><div class="barra-mini-fill" style="width:${l.pctA}%;background:#22c55e"></div></div>
-            <span style="font-size:11px;min-width:40px;text-align:right">${l.pctA}%</span>
-          </div>
-        </td>
-        <td>
-          <div class="barra-mini-wrap">
-            <div class="barra-mini-bg"><div class="barra-mini-fill" style="width:${l.pctBD}%;background:#ef4444"></div></div>
-            <span style="font-size:11px;min-width:40px;text-align:right">${l.pctBD}%</span>
-          </div>
-        </td>
-      </tr>`).join('');
+      return Object.values(porMes).map(m => m.total ? Math.round(m.alvo/m.total*1000)/10 : null);
     }
 
-    // ── Gráfico horímetro por mês ──
-    function renderGraficoHorimetro(leiturasHorimetro, ano) {
-      // Para cada mês, soma (max-min) das leituras dentro desse mês, por equipamento
-      const porMesEquip = {};
-      for (let m = 1; m <= 12; m++) porMesEquip[m] = {};
-      leiturasHorimetro.forEach(l => {
-        const mes = parseInt(l.data_leitura.split('-')[1]);
-        if (!porMesEquip[mes][l.equipment_id]) porMesEquip[mes][l.equipment_id] = { min:l.hora, max:l.hora };
-        porMesEquip[mes][l.equipment_id].min = Math.min(porMesEquip[mes][l.equipment_id].min, l.hora);
-        porMesEquip[mes][l.equipment_id].max = Math.max(porMesEquip[mes][l.equipment_id].max, l.hora);
-      });
+    function renderComparacao(dispAno, dispAnoAnterior, ano) {
+      document.getElementById('titulo-comparacao').textContent = `Comparação de Disponibilidade — ${ano} vs ${ano-1}`;
+      const atual = calcularPctMensal(dispAno, 'A');
+      const anterior = calcularPctMensal(dispAnoAnterior, 'A');
 
-      const valores = [];
-      for (let m = 1; m <= 12; m++) {
-        let total = 0;
-        Object.values(porMesEquip[m]).forEach(v => total += (v.max - v.min));
-        valores.push(Math.round(total));
-      }
-
-      if (chartHorimetro) chartHorimetro.destroy();
-      const ctx = document.getElementById('chartHorimetro').getContext('2d');
-      chartHorimetro = new Chart(ctx, {
+      if (chartComparacao) chartComparacao.destroy();
+      const ctx = document.getElementById('chartComparacao').getContext('2d');
+      chartComparacao = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: MESES_PT,
-          datasets: [{ label: 'Horas Trabalhadas', data: valores, backgroundColor: '#3b82f6', borderRadius: 4 }]
+          labels: MESES_PT_ABREV,
+          datasets: [
+            { label: String(ano), data: atual, backgroundColor:'#22c55e' },
+            { label: String(ano-1), data: anterior, backgroundColor:'rgba(34,197,94,0.35)' },
+          ]
         },
         options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display:false } },
+          responsive:true, maintainAspectRatio:false,
           scales: {
-            y: { ticks:{color:'#999'}, grid:{color:'rgba(255,255,255,0.05)'} },
             x: { ticks:{color:'#999'}, grid:{display:false} },
+            y: { max:100, ticks:{color:'#999', callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.05)'} },
+          },
+          plugins: {
+            legend: { position:'top', labels:{color:'#ccc'} },
+            datalabels: { display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0, color:'#fff', font:{size:9,weight:'bold'}, anchor:'end', align:'top', formatter:v=>v+'%' },
           }
         }
       });
     }
+
+    // ═══ Heatmap ═══
+    function renderHeatmap(disponibilidade, equipFiltrados, ano) {
+      const meses = mesesSelecionados();
+      const container = document.getElementById('heatmap-container');
+
+      // Agrupar equipamentos por categoria -> grupo, ordenado
+      const gruposOrdenados = [];
+      todasCategorias.forEach(cat => {
+        const gruposDaCat = todosGrupos.filter(g => g.categoria_id === cat.id);
+        const semGrupo = equipFiltrados.filter(e => e.fleet_type === cat.nome && !gruposDaCat.find(g => g.nome === e.group_name));
+        gruposDaCat.forEach(g => {
+          const equipsDoGrupo = equipFiltrados.filter(e => e.fleet_type === cat.nome && e.group_name === g.nome);
+          if (equipsDoGrupo.length) gruposOrdenados.push({ nome: `${cat.nome} — ${g.nome}`, equips: equipsDoGrupo.sort((a,b)=>(a.code||'').localeCompare(b.code||'')) });
+        });
+        if (semGrupo.length) gruposOrdenados.push({ nome: cat.nome, equips: semGrupo.sort((a,b)=>(a.code||'').localeCompare(b.code||'')) });
+      });
+      const catsConhecidas = todasCategorias.map(c => c.nome);
+      const orfaos = equipFiltrados.filter(e => !catsConhecidas.includes(e.fleet_type));
+      if (orfaos.length) gruposOrdenados.push({ nome: 'Outros', equips: orfaos.sort((a,b)=>(a.code||'').localeCompare(b.code||'')) });
+
+      const hoje = new Date();
+
+      if (meses.length === 1) {
+        const mes = meses[0];
+        const nDias = diasNoMes(ano, mes);
+        document.getElementById('titulo-heatmap').textContent = `${MESES_PT_LONGO[mes]} ${ano}`;
+
+        const rowsDoMes = disponibilidade.filter(r => r.mes === mes);
+        const mapa = {};
+        rowsDoMes.forEach(r => {
+          if (!mapa[r.equipment_id]) mapa[r.equipment_id] = {};
+          if (!mapa[r.equipment_id][r.dia]) mapa[r.equipment_id][r.dia] = {};
+          mapa[r.equipment_id][r.dia][r.estado] = (mapa[r.equipment_id][r.dia][r.estado]||0) + (parseFloat(r.horas)||0);
+        });
+
+        const ehMesAtual = hoje.getFullYear()===ano && (hoje.getMonth()+1)===mes;
+        let theadDias = ''; for (let d=1; d<=nDias; d++) theadDias += `<th>${d}</th>`;
+
+        let corpo = '';
+        gruposOrdenados.forEach(grupo => {
+          corpo += `<tr class="grupo-header"><td colspan="${nDias+1}">${grupo.nome}</td></tr>`;
+          grupo.equips.forEach(eq => {
+            let linha = `<tr><td class="col-equip"><span class="cod">${eq.code}</span><span class="grp">${eq.group_name||''}</span></td>`;
+            for (let d=1; d<=nDias; d++) {
+              const diaData = mapa[eq.id] && mapa[eq.id][d];
+              let cor='cor-vazio', estadoDominante='';
+              if (diaData) {
+                let melhor=null, melhorH=-1;
+                Object.entries(diaData).forEach(([e,h]) => { if (h>melhorH) { melhorH=h; melhor=e; } });
+                cor = 'cor-'+melhor; estadoDominante = melhor;
+              }
+              const classeHoje = (ehMesAtual && d===hoje.getDate()) ? ' hoje-col' : '';
+              linha += `<td class="dia-cel ${cor}${classeHoje}" data-estado="${estadoDominante}" onclick="abrirModalDia(${eq.id},'${eq.code}',${ano},${mes},${d})"></td>`;
+            }
+            linha += '</tr>';
+            corpo += linha;
+          });
+        });
+
+        container.innerHTML = `<table class="heatmap"><thead><tr><th class="col-equip">Equipamento</th>${theadDias}</tr></thead><tbody>${corpo}</tbody></table>`;
+
+      } else {
+        document.getElementById('titulo-heatmap').textContent = `Vista Mensal — ${ano}`;
+        const mapa = {};
+        disponibilidade.forEach(r => {
+          if (!meses.includes(r.mes)) return;
+          if (!mapa[r.equipment_id]) mapa[r.equipment_id] = {};
+          if (!mapa[r.equipment_id][r.mes]) mapa[r.equipment_id][r.mes] = {};
+          mapa[r.equipment_id][r.mes][r.estado] = (mapa[r.equipment_id][r.mes][r.estado]||0) + (parseFloat(r.horas)||0);
+        });
+
+        let theadMeses = ''; meses.forEach(m => theadMeses += `<th>${MESES_PT_ABREV[m-1]}</th>`);
+
+        let corpo = '';
+        gruposOrdenados.forEach(grupo => {
+          corpo += `<tr class="grupo-header"><td colspan="${meses.length+1}">${grupo.nome}</td></tr>`;
+          grupo.equips.forEach(eq => {
+            let linha = `<tr><td class="col-equip"><span class="cod">${eq.code}</span><span class="grp">${eq.group_name||''}</span></td>`;
+            meses.forEach(m => {
+              const mesData = mapa[eq.id] && mapa[eq.id][m];
+              let cor='cor-vazio', estadoDominante='', pct='';
+              if (mesData) {
+                let melhor=null, melhorH=-1, total=0;
+                Object.entries(mesData).forEach(([e,h]) => { total+=h; if (h>melhorH) { melhorH=h; melhor=e; } });
+                cor = 'cor-'+melhor; estadoDominante = melhor;
+                pct = total ? Math.round(mesData['A']/total*100) : '';
+              }
+              linha += `<td class="dia-cel ${cor}" data-estado="${estadoDominante}" title="${eq.code} — ${MESES_PT_LONGO[m]}: ${pct!==''?pct+'% Disponível':'sem dados'}" style="width:34px" onclick="abrirModalMes(${eq.id},'${eq.code}',${ano},${m})"></td>`;
+            });
+            linha += '</tr>';
+            corpo += linha;
+          });
+        });
+
+        container.innerHTML = `<table class="heatmap"><thead><tr><th class="col-equip">Equipamento</th>${theadMeses}</tr></thead><tbody>${corpo}</tbody></table>`;
+      }
+
+      aplicarFiltroLegendaAoHeatmap();
+    }
+
+    // ═══ Ranking — máquinas mais paradas ═══
+    function renderRanking(disponibilidade, equipFiltrados) {
+      const mapaEquip = {}; equipFiltrados.forEach(e => mapaEquip[e.id]=e);
+      const porEquip = {};
+      disponibilidade.forEach(r => {
+        if (!porEquip[r.equipment_id]) porEquip[r.equipment_id] = { total:0, parada:0 };
+        const h = parseFloat(r.horas)||0;
+        porEquip[r.equipment_id].total += h;
+        if (['BD','AC','TY','SP'].includes(r.estado)) porEquip[r.equipment_id].parada += h;
+      });
+
+      const linhas = Object.entries(porEquip)
+        .map(([id,v]) => ({ eq: mapaEquip[id], ...v }))
+        .filter(l => l.eq && l.total > 0)
+        .map(l => ({ ...l, pct: Math.round(l.parada/l.total*1000)/10, dias: Math.round(l.parada/24*10)/10 }))
+        .sort((a,b) => b.pct - a.pct);
+
+      const tbody = document.getElementById('tbody-ranking');
+      if (!linhas.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Sem dados no período.</td></tr>'; return; }
+
+      tbody.innerHTML = linhas.slice(0,10).map(l => `<tr>
+        <td>${l.eq.code}</td><td>${l.eq.fleet_type||'—'}</td><td>${l.eq.group_name||'—'}</td>
+        <td><div class="barra-mini-wrap"><div class="barra-mini-bg"><div class="barra-mini-fill" style="width:${l.pct}%;background:#ef4444"></div></div><span style="font-size:11px;min-width:40px;text-align:right">${l.pct}%</span></div></td>
+        <td>${l.dias} dias</td>
+      </tr>`).join('');
+    }
+
+    // ═══ Modal detalhe do dia ═══
+    async function abrirModalDia(equipId, code, ano, mes, dia) {
+      const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      document.getElementById('modal-dia-titulo').textContent = `${code} — ${dia} de ${MESES_PT_LONGO[mes]} ${ano}`;
+      document.getElementById('modal-dia-resumo').innerHTML = '';
+      document.getElementById('modal-dia-tbody').innerHTML = '<tr><td colspan="4" class="text-muted">A carregar...</td></tr>';
+      document.getElementById('modal-dia').classList.add('aberto');
+
+      const registos = ultimoDisponibilidade.filter(r => r.equipment_id === equipId && r.mes === mes && r.dia === dia);
+      if (registos.length) {
+        document.getElementById('modal-dia-resumo').innerHTML = registos.map(r =>
+          `<span class="badge" style="background:${ESTADO_COR[r.estado]}22;color:${ESTADO_COR[r.estado]};margin-right:6px">${ESTADO_LABEL[r.estado]}: ${r.horas}h</span>`
+        ).join('');
+      }
+
+      const intervencoes = await db.query('records', `select=*&equipment_id=eq.${equipId}&shift_date=eq.${dataStr}`);
+      if (!intervencoes.length) { document.getElementById('modal-dia-tbody').innerHTML = '<tr><td colspan="4" class="text-muted">Sem intervenções registadas neste dia.</td></tr>'; return; }
+
+      const relacoes = await db.query('record_collaborators', 'select=*');
+      const osIds = [...new Set(intervencoes.map(r => r.os_id).filter(Boolean))];
+      const osRows = osIds.length ? await db.query('ordens_servico', `select=id,numero_obra&id=in.(${osIds.join(',')})`) : [];
+
+      document.getElementById('modal-dia-tbody').innerHTML = intervencoes.map(r => {
+        const idsColabs = relacoes.filter(rc => rc.record_id === r.id).map(rc => rc.collaborator_id);
+        const nomes = idsColabs.map(id => { const c = colaboradoresCache.find(x=>x.id===id); return c?c.name:'—'; }).join(', ') || '—';
+        const os = osRows.find(o => o.id === r.os_id);
+        return `<tr>
+          <td>${r.time_start||'—'} — ${r.time_end||'—'}</td>
+          <td>${nomes}</td>
+          <td>${r.description||'—'}</td>
+          <td>${os ? `<a href="os_detalhe.html?id=${os.id}" style="color:var(--amber)">${os.numero_obra||'S/Nº'}</a>` : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function abrirModalMes(equipId, code, ano, mes) {
+      document.getElementById('modal-dia-titulo').textContent = `${code} — ${MESES_PT_LONGO[mes]} ${ano}`;
+      const registos = ultimoDisponibilidade.filter(r => r.equipment_id === equipId && r.mes === mes);
+      const totais = {};
+      registos.forEach(r => totais[r.estado] = (totais[r.estado]||0) + parseFloat(r.horas||0));
+      document.getElementById('modal-dia-resumo').innerHTML = Object.entries(totais).map(([e,h]) =>
+        `<span class="badge" style="background:${ESTADO_COR[e]}22;color:${ESTADO_COR[e]};margin-right:6px">${ESTADO_LABEL[e]}: ${Math.round(h)}h</span>`
+      ).join('') || '<span class="text-muted">Sem dados neste mês.</span>';
+      document.getElementById('modal-dia-tbody').innerHTML = `<tr><td colspan="4" class="text-muted">Selecciona apenas "${MESES_PT_LONGO[mes]}" no filtro de mês para ver o detalhe dia a dia.</td></tr>`;
+      document.getElementById('modal-dia').classList.add('aberto');
+    }
+
+    function fecharModalDia() { document.getElementById('modal-dia').classList.remove('aberto'); }
 
     document.getElementById('btn-aplicar').addEventListener('click', aplicarFiltros);
 
