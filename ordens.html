@@ -15,6 +15,23 @@
     .tipo-grid input[type=checkbox] { width:auto; }
     .badge-sem-nr { background:rgba(156,163,175,0.15); color:#9ca3af; border-radius:20px; padding:2px 8px; font-size:11px; font-weight:700; }
     .dias-aberta { font-size:11px; color:var(--red); font-weight:600; }
+
+    .tech-search-wrap { position:relative; }
+    .tech-dropdown {
+      position:absolute; top:100%; left:0; right:0; background:var(--navy3);
+      border:1px solid var(--border); border-radius:6px; z-index:50;
+      max-height:180px; overflow-y:auto; display:none; margin-top:2px;
+    }
+    .tech-dropdown.open { display:block; }
+    .tech-option { padding:8px 12px; font-size:13px; cursor:pointer; }
+    .tech-option:hover { background:var(--navy2); }
+    .chips-wrap { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .chip-tech { background:rgba(59,130,246,0.15); color:var(--blue); border-radius:20px; padding:3px 10px 3px 12px; font-size:12px; display:flex; align-items:center; gap:6px; }
+    .chip-tech button { background:none; border:none; color:var(--blue); cursor:pointer; font-size:14px; line-height:1; padding:0; }
+
+    .horimetro-linha { display:flex; gap:8px; }
+    .horimetro-linha input { flex:1; }
+    .horimetro-linha select { width:90px; flex-shrink:0; }
   </style>
 </head>
 <body>
@@ -54,7 +71,6 @@
             <option value="Revisão/Manutenção">Revisão/Manutenção</option>
             <option value="Inspeção">Inspeção</option>
             <option value="Aguarda Acessório">Aguarda Acessório</option>
-            <option value="Concluído">Concluído</option>
           </select>
         </div>
         <div class="form-group">
@@ -67,6 +83,7 @@
             <option value="Pneumática">Pneumática</option>
             <option value="Lubrificação">Lubrificação</option>
             <option value="Piquete">Piquete</option>
+            <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
           </select>
         </div>
         <div class="form-group">
@@ -127,12 +144,19 @@
             <option value="Pneumática">Pneumática</option>
             <option value="Lubrificação">Lubrificação</option>
             <option value="Piquete">Piquete</option>
+            <option value="Máquinas e Ferramentas">Máquinas e Ferramentas</option>
           </select>
         </div>
 
         <div class="form-group mt-16">
-          <label>Conta Horas do Equipamento</label>
-          <input type="number" id="f-horimetro" min="0" step="0.1" placeholder="Ex: 4521" />
+          <label>Contador do Equipamento</label>
+          <div class="horimetro-linha">
+            <input type="number" id="f-horimetro" min="0" step="0.1" placeholder="Ex: 4521" />
+            <select id="f-unidade-medida">
+              <option value="h" selected>h</option>
+              <option value="km">km</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-group mt-16">
@@ -165,7 +189,6 @@
             <option value="Revisão/Manutenção">Revisão/Manutenção</option>
             <option value="Inspeção">Inspeção</option>
             <option value="Aguarda Acessório">Aguarda Acessório</option>
-            <option value="Concluído">Concluído</option>
           </select>
         </div>
 
@@ -175,13 +198,13 @@
         </div>
 
         <div class="form-group mt-16">
-  <label>Nome do Cliente</label>
-  <input type="text" id="f-nome-cliente" placeholder="CdM" value="CdM" />
-</div>
-        
-        <div class="form-group mt-16">
           <label>Aberto por</label>
-          <select id="f-aberto-por"><option value="">— Selecionar —</option></select>
+          <div class="tech-search-wrap">
+            <input type="text" id="ab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+            <div class="tech-dropdown" id="ab-dropdown"></div>
+          </div>
+          <div class="chips-wrap" id="ab-chips"></div>
+          <span class="nota">Podes selecionar mais de um colaborador.</span>
         </div>
 
         <div class="form-group mt-16">
@@ -191,7 +214,7 @@
 
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-os">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Criar Obra</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-os">Criar Obra</button>
         </div>
       </form>
     </div>
@@ -218,7 +241,7 @@
       return diff;
     }
 
-    let todasOrdens = [], mapaEquip = {};
+    let todasOrdens = [], mapaEquip = {}, collaboradoresAtivos = [], selecionadosAbertoPor = [];
 
     async function carregarEquipamentos() {
       const eq = await db.query('equipment','select=*&active=eq.true&order=code.asc');
@@ -233,11 +256,50 @@
     }
 
     async function carregarColaboradores() {
-      const lista = await db.query('collaborators','select=id,name,code&active=eq.true&order=name.asc');
-      const sel = document.getElementById('f-aberto-por');
-      lista.forEach(c => sel.insertAdjacentHTML('beforeend',
-        `<option value="${c.name}">${c.name}${c.code?' ('+c.code+')':''}</option>`));
+      collaboradoresAtivos = await db.query('collaborators','select=id,name,code,setor&active=eq.true&order=name.asc');
     }
+
+    // ── Pesquisa "Aberto por" (multi) ──
+    function filtrarAbertoPor(q) {
+      const dd = document.getElementById('ab-dropdown');
+      q = q.toLowerCase().trim();
+      if (!q) { dd.classList.remove('open'); dd.innerHTML=''; return; }
+      const jaSelecionados = selecionadosAbertoPor.map(c => c.id);
+      const matches = collaboradoresAtivos.filter(c =>
+        !jaSelecionados.includes(c.id) &&
+        (c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q))
+      );
+      dd.innerHTML = matches.length
+        ? matches.map(c => `<div class="tech-option" data-id="${c.id}">${c.name}${c.code?' ('+c.code+')':''}${c.setor?' — '+c.setor:''}</div>`).join('')
+        : '<div class="tech-option text-muted">Nenhum resultado.</div>';
+      dd.classList.add('open');
+    }
+    document.getElementById('ab-search').addEventListener('input', e => filtrarAbertoPor(e.target.value));
+    document.getElementById('ab-dropdown').addEventListener('click', e => {
+      const opt = e.target.closest('.tech-option');
+      if (!opt || !opt.dataset.id) return;
+      const c = collaboradoresAtivos.find(x => String(x.id) === opt.dataset.id);
+      if (c && !selecionadosAbertoPor.find(x => x.id === c.id)) {
+        selecionadosAbertoPor.push(c);
+        renderChipsAbertoPor();
+      }
+      document.getElementById('ab-search').value = '';
+      document.getElementById('ab-dropdown').classList.remove('open');
+    });
+    function renderChipsAbertoPor() {
+      document.getElementById('ab-chips').innerHTML = selecionadosAbertoPor.map(c =>
+        `<span class="chip-tech">${c.name}${c.code?' ('+c.code+')':''}<button type="button" data-id="${c.id}">✕</button></span>`
+      ).join('');
+    }
+    document.getElementById('ab-chips').addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      selecionadosAbertoPor = selecionadosAbertoPor.filter(c => String(c.id) !== btn.dataset.id);
+      renderChipsAbertoPor();
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#ab-search') && !e.target.closest('#ab-dropdown')) document.getElementById('ab-dropdown').classList.remove('open');
+    });
 
     async function carregarOrdens() {
       todasOrdens = await db.query('ordens_servico','select=*');
@@ -245,34 +307,32 @@
     }
 
     function renderizarTabela() {
-      const fs  = document.getElementById('filtro-status').value;
-      const fe  = document.getElementById('filtro-equipamento').value;
-      const ff  = document.getElementById('filtro-fisico').value;
-      const fsc = document.getElementById('filtro-sector').value;
+      const fs = document.getElementById('filtro-status').value;
+      const fe = document.getElementById('filtro-equipamento').value;
+      const ff = document.getElementById('filtro-fisico').value;
+      const fsec = document.getElementById('filtro-sector').value;
       const fnr = document.getElementById('filtro-nr-obra').value;
-      const fb  = document.getElementById('filtro-busca').value.trim().toLowerCase();
-
+      const fb = document.getElementById('filtro-busca').value.trim().toLowerCase();
       let lista = [...todasOrdens];
-      if (fs)  lista = lista.filter(o => o.status_atual === fs);
-      if (fe)  lista = lista.filter(o => String(o.equipment_id) === fe);
-      if (ff)  lista = lista.filter(o => o.status_fisico === ff);
-      if (fsc) lista = lista.filter(o => o.sector === fsc);
+      if (fs) lista = lista.filter(o => o.status_atual === fs);
+      if (fe) lista = lista.filter(o => String(o.equipment_id) === fe);
+      if (ff) lista = lista.filter(o => o.status_fisico === ff);
+      if (fsec) lista = lista.filter(o => o.sector === fsec);
       if (fnr === 'sem') lista = lista.filter(o => !o.numero_obra);
       if (fnr === 'com') lista = lista.filter(o => !!o.numero_obra);
-      if (fb)  lista = lista.filter(o => (o.numero_obra||'').toLowerCase().includes(fb));
+      if (fb) lista = lista.filter(o => (o.numero_obra||'').toLowerCase().includes(fb));
       lista.sort((a,b) => new Date(b.data_abertura)-new Date(a.data_abertura));
 
       const tbody = document.getElementById('tbody-os');
       if (!lista.length) { tbody.innerHTML='<tr><td colspan="10">Nenhuma obra encontrada.</td></tr>'; return; }
 
       tbody.innerHTML = lista.map(o => {
-        const eq    = mapaEquip[o.equipment_id]||{};
+        const eq = mapaEquip[o.equipment_id]||{};
         const badge = BADGE_FISICO[o.status_fisico]||'badge-gray';
         const avaria = o.descricao_avaria
-          ? (o.descricao_avaria.length>45 ? o.descricao_avaria.slice(0,45)+'…' : o.descricao_avaria)
+          ? (o.descricao_avaria.length>50 ? o.descricao_avaria.slice(0,50)+'…' : o.descricao_avaria)
           : '—';
 
-        // Dias sem nº de obra (só para obras sem número e não fechadas)
         let diasSemNr = '';
         if (!o.numero_obra && o.status_atual !== 'Fechada') {
           const dias = diasDesdeAbertura(o.data_abertura);
@@ -280,9 +340,7 @@
         }
 
         return `<tr>
-          <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">
-            ${o.numero_obra || '<span class="badge-sem-nr">s/nº</span>'}
-          </td>
+          <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${o.numero_obra || '<span class="badge-sem-nr">s/nº</span>'}</td>
           <td style="cursor:pointer" onclick="window.location.href='os_detalhe.html?id=${o.id}'">${eq.code||'—'}</td>
           <td>${eq.fleet_type||'—'}</td>
           <td>${o.sector||'—'}</td>
@@ -311,51 +369,62 @@
     document.getElementById('btn-nova-os').addEventListener('click', () => {
       document.getElementById('form-nova-os').reset();
       document.getElementById('f-data-abertura').value = dataHoje();
+      document.getElementById('f-unidade-medida').value = 'h';
+      selecionadosAbertoPor = [];
+      renderChipsAbertoPor();
       modal.classList.add('aberto');
     });
     document.getElementById('btn-cancelar-os').addEventListener('click', () => modal.classList.remove('aberto'));
 
     document.getElementById('form-nova-os').addEventListener('submit', async ev => {
       ev.preventDefault();
-      const tiposSelec = Array.from(
-        document.querySelectorAll('.tipo-grid input[type=checkbox]:checked')
-      ).map(cb => cb.value);
 
-      const numeroObra = document.getElementById('f-numero-obra').value.trim() || null;
-      const horimetro  = document.getElementById('f-horimetro').value;
-
-      const payload = {
-        numero_obra:      numeroObra,
-        equipment_id:     document.getElementById('f-equipamento').value,
-        sector:           document.getElementById('f-sector').value,
-        hora_equipamento: horimetro ? parseFloat(horimetro) : null,
-        descricao_avaria: document.getElementById('f-descricao-avaria').value.trim(),
-        tipo_intervencao: tiposSelec.length > 0 ? tiposSelec : null,
-        data_abertura:    document.getElementById('f-data-abertura').value,
-        status_fisico:    document.getElementById('f-status-fisico').value,
-        status_atual:     'Aberta (DTEC)',
-        aberto_por:       document.getElementById('f-aberto-por').value || null,
-        observacoes:      document.getElementById('f-observacoes').value.trim() || null,
-        nome_cliente: document.getElementById('f-nome-cliente').value.trim() || 'CdM',
-      };
+      const btnSubmit = document.getElementById('btn-submit-os');
+      if (btnSubmit.disabled) return; // evita duplo clique
+      btnSubmit.disabled = true;
+      const textoOriginal = btnSubmit.textContent;
+      btnSubmit.textContent = 'A criar...';
 
       try {
+        const tiposSelec = Array.from(
+          document.querySelectorAll('.tipo-grid input[type=checkbox]:checked')
+        ).map(cb => cb.value);
+
+        const numeroObra = document.getElementById('f-numero-obra').value.trim() || null;
+        const horimetro  = document.getElementById('f-horimetro').value;
+
+        const payload = {
+          numero_obra:       numeroObra,
+          equipment_id:      document.getElementById('f-equipamento').value,
+          sector:            document.getElementById('f-sector').value,
+          hora_equipamento:  horimetro ? parseFloat(horimetro) : null,
+          unidade_medida:    document.getElementById('f-unidade-medida').value,
+          descricao_avaria:  document.getElementById('f-descricao-avaria').value.trim(),
+          tipo_intervencao:  tiposSelec.length > 0 ? tiposSelec : null,
+          data_abertura:     document.getElementById('f-data-abertura').value,
+          status_fisico:     document.getElementById('f-status-fisico').value,
+          status_atual:      'Aberta (DTEC)',
+          aberto_por:        selecionadosAbertoPor.length ? selecionadosAbertoPor.map(c => c.name) : null,
+          observacoes:       document.getElementById('f-observacoes').value.trim() || null,
+        };
+
         const nova = await db.insert('ordens_servico', payload);
         if (nova && nova.code) throw new Error(nova.message||'Erro');
         const novaId = Array.isArray(nova) ? nova[0].id : nova.id;
 
         await db.insert('os_status_log',{
           os_id: novaId, status_anterior: null,
-          status_novo: 'Aberta (DTEC)', responsavel: payload.aberto_por,
+          status_novo: 'Aberta (DTEC)',
+          responsavel: selecionadosAbertoPor.length ? selecionadosAbertoPor.map(c=>c.name).join(', ') : null,
           observacao: 'Obra criada'
         });
         await db.insert('os_status_fisico_log',{
           os_id: novaId, status_fisico: payload.status_fisico
         });
 
-        modal.classList.remove('aberto');
-        document.getElementById('form-nova-os').reset();
-        await carregarOrdens();
+        // Vai directamente para a página da obra para começar a trabalhar
+        window.location.href = `os_detalhe.html?id=${novaId}`;
+
       } catch(err) {
         const msg = String(err.message||err);
         if (msg.includes('uq_numero_obra')||msg.includes('duplicate')) {
@@ -363,6 +432,8 @@
         } else {
           alert('Erro ao criar a obra: '+msg);
         }
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = textoOriginal;
       }
     });
 
