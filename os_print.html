@@ -406,10 +406,10 @@
     document.getElementById('p-cliente').textContent      = os.nome_cliente || 'CdM';
     document.getElementById('p-equipamento').textContent  = eq.code || '—';
     document.getElementById('p-sector').textContent       = os.sector || '—';
-    document.getElementById('p-conta-horas').textContent  = os.hora_equipamento != null ? os.hora_equipamento + ' h' : '';
+    document.getElementById('p-conta-horas').textContent = os.hora_equipamento != null ? os.hora_equipamento + ' ' + (os.unidade_medida || 'h') : '';
     document.getElementById('p-data-abertura').textContent = fData(os.data_abertura);
     document.getElementById('p-diagnostico').textContent  = os.descricao_avaria || '—';
-    document.getElementById('p-aberto-por').textContent   = os.aberto_por || '—';
+    document.getElementById('p-aberto-por').textContent = Array.isArray(os.aberto_por) ? os.aberto_por.join(', ') : (os.aberto_por || '—');
 
     const mapaTipo = {
       'Inspeção Geral':'cb-ig','Reparação Pneus':'cb-rp','Lubrificação':'cb-lb',
