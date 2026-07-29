@@ -1020,15 +1020,26 @@
       if (!pecasCache.length) pecasCache = await db.query('os_pecas', `select=*&os_id=eq.${osId}`);
       const p = pecasCache.find(x => x.id === id);
       if (!p) return;
-      document.getElementById('p-id').value       = p.id;
-      document.getElementById('p-peca').value      = p.peca || '';
-      document.getElementById('p-data').value      = p.data || '';
-      document.getElementById('p-qtd').value       = p.quantidade || 1;
-      document.getElementById('p-unidade').value   = p.unidade || 'Unidade';
+
+      document.getElementById('titulo-modal-peca').textContent = 'Editar Peça';
+      document.getElementById('p-id').value = p.id;
+      document.getElementById('p-data').value = p.data || '';
+      document.getElementById('p-usar-stock').checked = !!p.material_id;
+
+      document.getElementById('pecas-linhas-container').innerHTML = '';
+      const linha = novaLinhaPeca();
+      if (p.material_id) {
+        linha.querySelector('.linha-peca-material').value = p.material_id;
+      } else {
+        linha.querySelector('.linha-peca-nome').value = p.peca || '';
+      }
+      linha.querySelector('.linha-peca-qtd').value = p.quantidade || 1;
+      linha.querySelector('.linha-peca-unidade').value = p.unidade || 'Unidade';
+
       seletorPColab.reset();
       document.getElementById('p-colaborador').value = p.colaborador || '';
       if (p.colaborador) document.getElementById('p-colab-chip').innerHTML = `<span class="chip-tech">${p.colaborador}<button type="button">✕</button></span>`;
-      document.getElementById('modal-peca').classList.add('aberto');
+      modalPeca.classList.add('aberto');
     }
 
     let recordsCache = [];
@@ -1216,19 +1227,16 @@
       }
     });
 
-    // Modal Peça
+    // Modal Peça — criar
     const modalPeca = document.getElementById('modal-peca');
     document.getElementById('btn-nova-peca').addEventListener('click', () => {
+      document.getElementById('titulo-modal-peca').textContent = 'Adicionar Peça(s) Aplicada(s)';
       document.getElementById('form-peca').reset();
       document.getElementById('p-id').value = '';
       document.getElementById('p-data').value = dataHoje();
-      document.getElementById('p-qtd').value = 1;
-      document.getElementById('p-unidade').value = 'Unidade';
       document.getElementById('p-usar-stock').checked = false;
-      document.getElementById('p-peca-texto-wrap').style.display = 'block';
-      document.getElementById('p-peca-select-wrap').style.display = 'none';
-      document.getElementById('p-peca').required = true;
-      document.getElementById('p-material-stock').required = false;
+      document.getElementById('pecas-linhas-container').innerHTML = '';
+      novaLinhaPeca();
       seletorPColab.reset();
       pecasCache = [];
       modalPeca.classList.add('aberto');
@@ -1246,47 +1254,52 @@
       try {
         const id = document.getElementById('p-id').value;
         const usaStock = document.getElementById('p-usar-stock').checked;
-        const qtd = parseFloat(document.getElementById('p-qtd').value) || 1;
-        const unidade = document.getElementById('p-unidade').value;
         const dataAplicacao = document.getElementById('p-data').value || null;
         const colaboradorNome = document.getElementById('p-colaborador').value || null;
+        const linhas = document.querySelectorAll('.linha-peca-item');
 
-        let payload;
-        if (usaStock) {
-          const materialId = document.getElementById('p-material-stock').value;
-          if (!materialId) { alert('Selecione um material do Stock.'); return; }
-          const material = materiaisStock.find(m => m.id === materialId);
+        for (const linha of linhas) {
+          const qtd = parseFloat(linha.querySelector('.linha-peca-qtd').value) || 1;
+          const unidade = linha.querySelector('.linha-peca-unidade').value;
+          let payload;
 
-          const movimento = await db.insert('stock_movimentos', {
-            tipo: 'saida', estado: 'pendente', material_id: materialId, quantidade: qtd,
-            data_movimento: dataAplicacao || dataHoje(), departamento: 'Oficina',
-            finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} — ${equipAtual ? equipAtual.code : ''}`,
-            colaborador_nome: colaboradorNome || '', observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
-          });
-          const movId = Array.isArray(movimento) ? movimento[0].id : movimento.id;
+          if (usaStock) {
+            const materialId = linha.querySelector('.linha-peca-material').value;
+            if (!materialId) { alert('Selecione um material do Stock em todas as linhas.'); btn.disabled=false; btn.textContent=textoOrig; return; }
+            const material = materiaisStock.find(m => m.id === materialId);
 
-          payload = {
-            os_id: parseInt(osId), peca: material ? material.nome : 'Material do Stock',
-            data: dataAplicacao, quantidade: qtd, unidade: material ? (material.unidade||'Unidade') : unidade,
-            colaborador: colaboradorNome, material_id: materialId, stock_movimento_id: movId,
-          };
-        } else {
-          const nomePeca = document.getElementById('p-peca').value.trim();
-          payload = {
-            os_id: parseInt(osId), peca: nomePeca, data: dataAplicacao,
-            quantidade: qtd, unidade, colaborador: colaboradorNome,
-            material_id: null, stock_movimento_id: null,
-          };
-          await registarMaterialSugerido(nomePeca);
+            const movimento = await db.insert('stock_movimentos', {
+              tipo: 'saida', estado: 'pendente', material_id: materialId, quantidade: qtd,
+              data_movimento: dataAplicacao || dataHoje(), departamento: 'Oficina',
+              finalidade: `OS ${osAtual.numero_obra || 'S/Nº'} — ${equipAtual ? equipAtual.code : ''}`,
+              colaborador_nome: colaboradorNome || '', observacoes: `Avaria: ${osAtual.descricao_avaria || '—'}`,
+            });
+            const movId = Array.isArray(movimento) ? movimento[0].id : movimento.id;
+
+            payload = {
+              os_id: parseInt(osId), peca: material ? material.nome : 'Material do Stock',
+              data: dataAplicacao, quantidade: qtd, unidade: material ? (material.unidade||'Unidade') : unidade,
+              colaborador: colaboradorNome, material_id: materialId, stock_movimento_id: movId,
+            };
+          } else {
+            const nomePeca = linha.querySelector('.linha-peca-nome').value.trim();
+            if (!nomePeca) { alert('Preencha o nome da peça em todas as linhas.'); btn.disabled=false; btn.textContent=textoOrig; return; }
+            payload = {
+              os_id: parseInt(osId), peca: nomePeca, data: dataAplicacao,
+              quantidade: qtd, unidade, colaborador: colaboradorNome,
+              material_id: null, stock_movimento_id: null,
+            };
+            await registarMaterialSugerido(nomePeca);
+          }
+
+          if (id) await db.update('os_pecas', id, payload);
+          else    await db.insert('os_pecas', payload);
         }
-
-        if (id) await db.update('os_pecas', id, payload);
-        else    await db.insert('os_pecas', payload);
 
         pecasCache = [];
         modalPeca.classList.remove('aberto');
         await carregarPecas();
-        if (usaStock) mostrarToast('Peça registada e saída pendente criada no Stock.');
+        mostrarToast(usaStock ? 'Peça(s) registada(s) e saída pendente criada no Stock.' : 'Peça(s) guardada(s) com sucesso.');
       } catch(err) {
         alert('Erro ao guardar peça: '+(err.message||err));
       } finally {
