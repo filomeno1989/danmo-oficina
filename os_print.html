@@ -206,24 +206,32 @@
       .btn-bar { display: none !important; }
       .folha { width: 100%; margin: 0; box-shadow: none; padding: 0; }
 
+      /* A margem da página reserva espaço para o cabeçalho/rodapé em TODAS as páginas */
+      @page { size: A4; margin: 34mm 10mm 22mm 10mm; }
+
       .cabecalho {
-        position: fixed; top: 0; left: 0; right: 0;
-        background: #fff; padding: 8mm 10mm 4px;
+        position: fixed;
+        top: -26mm;      /* entra na margem reservada do topo */
+        left: 0; right: 0;
+        background: #fff;
+        padding: 0 0 4px;
         margin-bottom: 0;
       }
       .rodape-legal {
-        position: fixed; bottom: 0; left: 0; right: 0;
-        background: #fff; padding: 3px 10mm 6mm;
+        position: fixed;
+        bottom: -16mm;   /* entra na margem reservada do fundo */
+        left: 0; right: 0;
+        background: #fff;
+        padding: 3px 0 0;
         margin-top: 0;
       }
 
+      /* Já não precisa de margin-top/bottom manual — a margem da página trata disso */
       .conteudo {
-        margin-top: 26mm;   /* espaço para o cabeçalho fixo */
-        margin-bottom: 16mm; /* espaço para o rodapé fixo */
-        padding: 0 10mm;
+        margin: 0;
+        padding: 0;
       }
 
-      @page { size: A4; margin: 0; }
       .tabela-obra tbody tr { page-break-inside: avoid; }
       .assinaturas-wrap { page-break-inside: avoid; }
     }
