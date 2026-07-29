@@ -92,6 +92,40 @@
 
       <div class="info-box">
         <div class="flex-between" style="margin-bottom:4px">
+          <div class="label" style="margin-bottom:0">Equipamento, Data e Contador</div>
+          <button class="btn btn-ghost edit-btn" id="btn-editar-dados-base">Editar</button>
+        </div>
+        <div id="info-dados-base">—</div>
+        <div id="edit-dados-base-wrap" style="display:none;margin-top:8px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Equipamento</label>
+              <select id="edit-equipamento"></select>
+            </div>
+            <div class="form-group">
+              <label>Data de Abertura</label>
+              <input type="date" id="edit-data-abertura" />
+            </div>
+            <div class="form-group">
+              <label>Contador do Equipamento</label>
+              <div style="display:flex;gap:8px">
+                <input type="number" id="edit-horimetro" min="0" step="0.1" style="flex:1" />
+                <select id="edit-unidade-medida" style="width:90px;flex-shrink:0">
+                  <option value="h">h</option>
+                  <option value="km">km</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" id="btn-cancelar-dados-base">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btn-guardar-dados-base">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="flex-between" style="margin-bottom:4px">
           <div class="label" style="margin-bottom:0">Tipo de Intervenção</div>
           <button class="btn btn-ghost edit-btn" id="btn-editar-tipo">Adicionar / Editar</button>
         </div>
@@ -219,6 +253,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>
           <div style="font-size:12px;color:var(--amber);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Estado da Obra</div>
+          <p class="text-muted" style="font-size:11px;margin-bottom:6px">Errou o responsável? Edite ou apague o registo abaixo.</p>
           <ul class="timeline" id="lista-timeline"><li>A carregar...</li></ul>
         </div>
         <div>
@@ -268,6 +303,11 @@
           <tbody id="tbody-pecas"><tr><td colspan="6">Sem peças registadas.</td></tr></tbody>
         </table>
       </div>
+    </div>
+
+    <div class="flex-between mt-16" style="margin-bottom:24px">
+      <a href="ordens.html" class="btn btn-ghost">← Voltar</a>
+      <button class="btn btn-ghost" onclick="window.open('os_print.html?id='+new URLSearchParams(location.search).get('id'))">🖨️ Imprimir Folha</button>
     </div>
   </main>
 
@@ -322,7 +362,7 @@
   <!-- Modal Peça -->
   <div class="modal-overlay" id="modal-peca">
     <div class="modal-box">
-      <div class="card-title">Adicionar Peça Aplicada</div>
+      <div class="card-title" id="titulo-modal-peca">Adicionar Peça(s) Aplicada(s)</div>
       <form id="form-peca">
         <input type="hidden" id="p-id" />
 
@@ -333,21 +373,11 @@
           </label>
         </div>
 
-        <div class="form-group mt-16" id="p-peca-texto-wrap">
-          <label>Peça / Material *</label>
-          <input type="text" id="p-peca" required list="lista-materiais-sugeridos" placeholder="Ex: Correia de comando, Óleo 15W40..." />
-          <datalist id="lista-materiais-sugeridos"></datalist>
-        </div>
+        <datalist id="lista-materiais-sugeridos"></datalist>
 
-        <div class="form-group mt-16" id="p-peca-select-wrap" style="display:none">
-          <label>Material do Stock *</label>
-          <select id="p-material-stock">
-            <option value="">— Selecionar material —</option>
-          </select>
-          <span class="nota" style="font-size:11px;color:var(--text2);font-style:italic">
-            Ao guardar, cria automaticamente uma saída pendente no Stock DSS.
-          </span>
-        </div>
+        <div id="pecas-linhas-container" class="mt-16"></div>
+
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-add-linha-peca" style="margin-top:4px">+ Adicionar outra peça</button>
 
         <div class="form-grid mt-16">
           <div class="form-group">
@@ -355,29 +385,14 @@
             <input type="date" id="p-data" />
           </div>
           <div class="form-group">
-            <label>Quantidade</label>
-            <div class="peca-linha">
-              <input type="number" id="p-qtd" min="0.01" step="0.01" value="1" />
-              <select id="p-unidade" class="unidade-select" list="lista-unidades">
-                <option value="Unidade">Unidade</option>
-                <option value="Litro">Litro</option>
-                <option value="Kg">Kg</option>
-                <option value="Metro">Metro</option>
-                <option value="Caixa">Caixa</option>
-                <option value="Par">Par</option>
-                <option value="Rolo">Rolo</option>
-              </select>
+            <label>Colaborador que Aplicou</label>
+            <div class="tech-search-wrap">
+              <input type="text" id="p-colab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
+              <div class="tech-dropdown" id="p-colab-dropdown"></div>
             </div>
+            <input type="hidden" id="p-colaborador" />
+            <div class="chips-wrap" id="p-colab-chip"></div>
           </div>
-        </div>
-        <div class="form-group mt-16">
-          <label>Colaborador que Aplicou</label>
-          <div class="tech-search-wrap">
-            <input type="text" id="p-colab-search" placeholder="Pesquisar por nome ou código..." autocomplete="off" />
-            <div class="tech-dropdown" id="p-colab-dropdown"></div>
-          </div>
-          <input type="hidden" id="p-colaborador" />
-          <div class="chips-wrap" id="p-colab-chip"></div>
         </div>
         <div class="flex-between mt-24" style="justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost" id="btn-cancelar-peca">Cancelar</button>
@@ -443,6 +458,24 @@
       return minutos >= 30 ? horas + 1 : horas;
     }
 
+    // Calcula horas trabalhadas entre início e fim, excluindo o intervalo de almoço (12h-13h)
+    function calcularHorasExcluindoAlmoco(inicio, fim) {
+      const [h1,m1] = inicio.split(':').map(Number);
+      const [h2,m2] = fim.split(':').map(Number);
+      let ini = h1*60 + m1;
+      let fimM = h2*60 + m2;
+      if (fimM <= ini) fimM += 24*60; // atravessa a meia-noite
+      let totalMin = fimM - ini;
+
+      const almocoIni = 12*60, almocoFim = 13*60;
+      const overlapIni = Math.max(ini, almocoIni);
+      const overlapFim = Math.min(fimM, almocoFim);
+      const overlapMin = Math.max(0, overlapFim - overlapIni);
+      totalMin -= overlapMin;
+
+      return totalMin / 60;
+    }
+
     // Transforma ';' em quebra de linha na apresentação (',' e '.' continuam normais)
     function formatarDescricao(texto) {
       if (!texto) return '—';
@@ -481,6 +514,9 @@
         document.getElementById('info-observacoes-wrap').style.display = 'block';
       }
 
+      document.getElementById('info-dados-base').innerHTML =
+        `<strong>${equipAtual ? equipAtual.code : '—'}</strong> — Aberta em ${formatarData(osAtual.data_abertura)} — Contador: ${osAtual.hora_equipamento != null ? osAtual.hora_equipamento + ' ' + (osAtual.unidade_medida||'h') : '—'}`;
+
       document.getElementById('sel-novo-status').value  = osAtual.status_atual;
       document.getElementById('sel-status-fisico').value = osAtual.status_fisico;
       document.getElementById('campo-numero-obra').value = osAtual.numero_obra || '';
@@ -488,6 +524,51 @@
       await carregarChecklistDigital();
     }
 
+    let todosEquipamentosCache = [];
+    async function carregarEquipamentosParaEdicao() {
+      if (todosEquipamentosCache.length) return todosEquipamentosCache;
+      todosEquipamentosCache = await db.query('equipment', 'select=*&active=eq.true&order=code.asc');
+      return todosEquipamentosCache;
+    }
+
+    document.getElementById('btn-editar-dados-base').addEventListener('click', async () => {
+      const equips = await carregarEquipamentosParaEdicao();
+      const sel = document.getElementById('edit-equipamento');
+      sel.innerHTML = equips.map(e => `<option value="${e.id}">${e.code} — ${e.fleet_type||''}</option>`).join('');
+      sel.value = osAtual.equipment_id;
+      document.getElementById('edit-data-abertura').value = osAtual.data_abertura || '';
+      document.getElementById('edit-horimetro').value = osAtual.hora_equipamento != null ? osAtual.hora_equipamento : '';
+      document.getElementById('edit-unidade-medida').value = osAtual.unidade_medida || 'h';
+      document.getElementById('edit-dados-base-wrap').style.display = 'block';
+    });
+    document.getElementById('btn-cancelar-dados-base').addEventListener('click', () => {
+      document.getElementById('edit-dados-base-wrap').style.display = 'none';
+    });
+    document.getElementById('btn-guardar-dados-base').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const textoOrig = btn.textContent;
+      btn.textContent = 'A guardar...';
+      try {
+        const horimetro = document.getElementById('edit-horimetro').value;
+        await db.update('ordens_servico', osId, {
+          equipment_id: document.getElementById('edit-equipamento').value,
+          data_abertura: document.getElementById('edit-data-abertura').value,
+          hora_equipamento: horimetro ? parseFloat(horimetro) : null,
+          unidade_medida: document.getElementById('edit-unidade-medida').value,
+          atualizado_em: new Date().toISOString(),
+        });
+        document.getElementById('edit-dados-base-wrap').style.display = 'none';
+        await carregarOS();
+        mostrarToast('Dados da obra atualizados.');
+      } catch (err) {
+        alert('Erro ao guardar: ' + (err.message||err));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOrig;
+      }
+    });
     async function criarItensChecklist(checklistId, templateId) {
       const secoes = await db.query('checklist_template_secoes', `select=id&template_id=eq.${templateId}`);
       const secaoIds = secoes.map(s => s.id).join(',');
@@ -652,9 +733,17 @@
       document.getElementById('lista-timeline').innerHTML = ord.length === 0
         ? '<li>Sem registos.</li>'
         : ord.map(ev => `<li>
-            <strong>${ev.status_anterior ? ev.status_anterior+' → ' : ''}${ev.status_novo}</strong>
-            ${ev.observacao ? ' — '+ev.observacao : ''}
-            <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : ''}${formatarDataHora(ev.data_mudanca)}</div>
+            <div class="flex-between" style="align-items:flex-start">
+              <div>
+                <strong>${ev.status_anterior ? ev.status_anterior+' → ' : ''}${ev.status_novo}</strong>
+                ${ev.observacao ? ' — '+ev.observacao : ''}
+                <div class="meta">${ev.responsavel ? ev.responsavel+' · ' : '<span style="color:var(--red)">sem responsável · </span>'}${formatarDataHora(ev.data_mudanca)}</div>
+              </div>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="editarResponsavelLog(${ev.id},'${(ev.responsavel||'').replace(/'/g,"\\'")}')">Editar</button>
+                <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px" onclick="apagarLogEstado(${ev.id})">Apagar</button>
+              </div>
+            </div>
           </li>`).join('');
 
       const logFisico = await db.query('os_status_fisico_log', `select=*&os_id=eq.${osId}`);
@@ -665,6 +754,23 @@
             <strong>${ev.status_fisico}</strong>
             <div class="meta">${formatarDataHora(ev.data_mudanca)}</div>
           </li>`).join('');
+    }
+
+    async function editarResponsavelLog(logId, responsavelAtual) {
+      const novoNome = prompt('Corrigir responsável deste registo:', responsavelAtual || '');
+      if (novoNome === null) return; // cancelado
+      const nomeFinal = novoNome.trim();
+      if (!nomeFinal) { alert('O responsável não pode ficar vazio.'); return; }
+      await db.update('os_status_log', logId, { responsavel: nomeFinal });
+      await carregarTimeline();
+      mostrarToast('Responsável corrigido.');
+    }
+
+    async function apagarLogEstado(logId) {
+      if (!confirm('Apagar este registo do histórico? Use isto só para corrigir um erro de lançamento.')) return;
+      await db.delete('os_status_log', logId);
+      await carregarTimeline();
+      mostrarToast('Registo apagado.');
     }
 
     // ── Widget de busca simples (seleção única, reutilizável) ──
@@ -715,11 +821,6 @@
 
     async function carregarMateriaisStock() {
       materiaisStock = await db.query('materiais', 'select=*&ativo=eq.true&order=nome.asc');
-      const sel = document.getElementById('p-material-stock');
-      materiaisStock.forEach(m => {
-        sel.insertAdjacentHTML('beforeend',
-          `<option value="${m.id}">${m.nome}${m.referencia?' ('+m.referencia+')':''} — ${m.unidade||'Und'}</option>`);
-      });
     }
 
     async function carregarMateriaisSugeridos() {
@@ -741,12 +842,58 @@
       }
     }
 
+    // ── Linhas dinâmicas de peça (permite lançar várias de uma vez) ──
+    function optionsMateriaisStock() {
+      return '<option value="">— Selecionar —</option>' +
+        materiaisStock.map(m => `<option value="${m.id}">${m.nome}${m.referencia?' ('+m.referencia+')':''} — ${m.unidade||'Und'}</option>`).join('');
+    }
+
+    function novaLinhaPeca() {
+      const usaStock = document.getElementById('p-usar-stock').checked;
+      const div = document.createElement('div');
+      div.className = 'linha-peca-item';
+      div.style.cssText = 'border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;position:relative';
+      div.innerHTML = `
+        <button type="button" class="btn btn-danger btn-sm btn-remover-linha-peca" style="position:absolute;top:8px;right:8px;padding:2px 8px">✕</button>
+        <div class="form-group linha-peca-texto-wrap" style="display:${usaStock?'none':'block'}">
+          <label>Peça / Material *</label>
+          <input type="text" class="linha-peca-nome" list="lista-materiais-sugeridos" placeholder="Ex: Correia de comando, Óleo 15W40..." />
+        </div>
+        <div class="form-group linha-peca-select-wrap" style="display:${usaStock?'block':'none'}">
+          <label>Material do Stock *</label>
+          <select class="linha-peca-material">${optionsMateriaisStock()}</select>
+        </div>
+        <div class="form-group mt-16">
+          <label>Quantidade</label>
+          <div class="peca-linha">
+            <input type="number" class="linha-peca-qtd" min="0.01" step="0.01" value="1" />
+            <select class="linha-peca-unidade unidade-select">
+              <option value="Unidade">Unidade</option>
+              <option value="Litro">Litro</option>
+              <option value="Kg">Kg</option>
+              <option value="Metro">Metro</option>
+              <option value="Caixa">Caixa</option>
+              <option value="Par">Par</option>
+              <option value="Rolo">Rolo</option>
+            </select>
+          </div>
+        </div>`;
+      document.getElementById('pecas-linhas-container').appendChild(div);
+      div.querySelector('.btn-remover-linha-peca').addEventListener('click', () => {
+        if (document.querySelectorAll('.linha-peca-item').length <= 1) { alert('Tem de haver pelo menos uma peça.'); return; }
+        div.remove();
+      });
+      return div;
+    }
+
+    document.getElementById('btn-add-linha-peca').addEventListener('click', () => novaLinhaPeca());
+
     document.getElementById('p-usar-stock').addEventListener('change', e => {
       const usaStock = e.target.checked;
-      document.getElementById('p-peca-texto-wrap').style.display = usaStock ? 'none' : 'block';
-      document.getElementById('p-peca-select-wrap').style.display = usaStock ? 'block' : 'none';
-      document.getElementById('p-peca').required = !usaStock;
-      document.getElementById('p-material-stock').required = usaStock;
+      document.querySelectorAll('.linha-peca-item').forEach(linha => {
+        linha.querySelector('.linha-peca-texto-wrap').style.display = usaStock ? 'none' : 'block';
+        linha.querySelector('.linha-peca-select-wrap').style.display = usaStock ? 'block' : 'none';
+      });
     });
 
     // ── Pesquisa de técnicos (intervenção, multi) ──
@@ -950,6 +1097,7 @@
       const novoStatus  = document.getElementById('sel-novo-status').value;
       const responsavel = document.getElementById('responsavel-mudanca').value || null;
       if (novoStatus === osAtual.status_atual) { alert('Estado já é o atual.'); return; }
+      if (!responsavel) { alert('Selecione o responsável antes de atualizar o estado da obra.'); return; }
 
       btn.disabled = true;
       const textoOrig = btn.textContent;
@@ -962,6 +1110,7 @@
           os_id: osId, status_anterior: osAtual.status_atual,
           status_novo: novoStatus, responsavel
         });
+        seletorResponsavel.reset();
         await carregarOS(); await carregarTimeline();
       } finally {
         btn.disabled = false;
@@ -1021,10 +1170,7 @@
       try {
         const inicio = document.getElementById('i-inicio').value;
         const fim    = document.getElementById('i-fim').value;
-        const [h1,m1] = inicio.split(':').map(Number);
-        const [h2,m2] = fim.split(':').map(Number);
-        let horasDecimal = (h2+m2/60)-(h1+m1/60);
-        if (horasDecimal < 0) horasDecimal += 24;
+        const horasDecimal = calcularHorasExcluindoAlmoco(inicio, fim);
         const horasArredondadas = arredondarHoras(horasDecimal);
 
         const payload = {
