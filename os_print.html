@@ -214,7 +214,7 @@
     }
 
     /* ══════════════════════════════
-        PRINT (CORRIGIDO PARA MÚLTIPLAS PÁGINAS)
+        PRINT (CORRIGIDO PARA MÚLTIPLAS PÁGINAS COM FOLGAS)
     ══════════════════════════════ */
     @media print {
       body { background: #fff; }
@@ -227,7 +227,7 @@
         position: fixed;
         top: 0; left: 0; right: 0;
         background: #fff;
-        padding: 8mm 10mm 4px;
+        padding: 8mm 10mm 0px; /* Reduzido o padding bottom para dar espaço visual */
         margin-bottom: 0;
         z-index: 1000;
       }
@@ -236,7 +236,7 @@
         position: fixed;
         bottom: 0; left: 0; right: 0;
         background: #fff;
-        padding: 3px 10mm 6mm;
+        padding: 0px 10mm 6mm; /* Ajustado padding superior */
         margin-top: 0;
         z-index: 1000;
       }
@@ -245,7 +245,10 @@
         padding: 0 10mm;
       }
 
+      /* Tenta manter as linhas da tabela e painéis juntos se possível */
+      .painel, .diag-box, .funcoes-bar { page-break-inside: avoid; }
       .tabela-obra tbody tr { page-break-inside: avoid; }
+      .tabela-pecas tbody tr { page-break-inside: avoid; }
       .assinaturas-wrap { page-break-inside: avoid; }
     }
   </style>
@@ -445,14 +448,15 @@
     return mm >= 30 ? hh + 1 : hh;
   }
 
-  // NOVA LÓGICA DE MARGENS: Mede o cabeçalho e define a altura dos placeholders da tabela!
+  // NOVA LÓGICA DE MARGENS: Mede o cabeçalho e define a altura dos placeholders com mais folga
   function ajustarMargensImpressao() {
     const cab = document.querySelector('.cabecalho');
     const rod = document.querySelector('.rodape-legal');
     if (!cab || !rod) return;
     
-    const alturaCab = cab.offsetHeight + 10; // +10px de folga extra
-    const alturaRod = rod.offsetHeight + 10;
+    // Aumentada a folga (de +10px para +25px) para evitar a sobreposição visual.
+    const alturaCab = cab.offsetHeight + 25; 
+    const alturaRod = rod.offsetHeight + 25;
 
     let estilo = document.getElementById('_margem-dinamica');
     if (!estilo) {
@@ -461,7 +465,6 @@
       document.head.appendChild(estilo);
     }
     
-    // Injeta a altura medida nos thead e tfoot da nossa tabela mágica
     estilo.textContent = `
       @media print {      
         .print-header-space { height: ${alturaCab}px !important; }
@@ -559,6 +562,7 @@
     preencherAssinatura('Supervisão', 'ass-abertura-nome', 'ass-abertura-data');
     preencherAssinatura('Chefe da Oficina', 'ass-supervisor-nome', 'ass-supervisor-data');
     preencherAssinatura('Departamento Técnico', 'ass-chefe-nome', 'ass-chefe-data');
+    
     const pecas  = await db.query('os_pecas', `select=*&os_id=eq.${osId}&order=criado_em.asc`);
     const tbodyP = document.getElementById('tbody-pecas');
     tbodyP.innerHTML = '';
