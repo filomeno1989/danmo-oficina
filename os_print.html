@@ -41,7 +41,7 @@
       padding: 9mm 12mm 12mm;
     }
 
-    /* ══ CABEÇALHO (fixo no topo em cada página impressa) ══ */
+    /* ══ CABEÇALHO ══ */
     .cabecalho {
       display: flex;
       align-items: center;
@@ -189,7 +189,7 @@
     .ass-cargo { font-size: 8px; text-transform: uppercase; letter-spacing: .6px; color: #666; margin-top: 4px; }
     .ass-data { font-size: 8px; color: #999; margin-top: 1px; }
 
-    /* ══ RODAPÉ LEGAL (fixo no fundo em cada página impressa) ══ */
+    /* ══ RODAPÉ LEGAL ══ */
     .rodape-legal {
       display: flex; justify-content: space-between; align-items: flex-end;
       border-top: 1px solid #ccc; padding-top: 5px; margin-top: 12px;
@@ -197,15 +197,31 @@
     .rodape-texto { font-size: 6.8px; color: #777; line-height: 1.5; }
     .rodape-logo img { height: 22px; }
 
+    /* ══ LAYOUT ESTRUTURAL DE IMPRESSÃO (TABELA MÁGICA) ══ */
+    .tabela-layout-impressao {
+      width: 100%;
+      border-collapse: collapse;
+      border: none;
+    }
+    .tabela-layout-impressao td, .tabela-layout-impressao th {
+      padding: 0;
+      border: none;
+    }
+    
+    @media screen {
+      /* No ecrã normal não precisamos dos espaços falsos da tabela */
+      .print-header-space, .print-footer-space { display: none; }
+    }
+
     /* ══════════════════════════════
-        PRINT
+        PRINT (CORRIGIDO PARA MÚLTIPLAS PÁGINAS)
     ══════════════════════════════ */
     @media print {
       body { background: #fff; }
       .btn-bar { display: none !important; }
       .folha { width: 100%; margin: 0; box-shadow: none; padding: 0; }
 
-      @page { size: A4; margin: 0; }
+      @page { size: A4; margin: 0; } 
 
       .cabecalho {
         position: fixed;
@@ -213,14 +229,18 @@
         background: #fff;
         padding: 8mm 10mm 4px;
         margin-bottom: 0;
+        z-index: 1000;
       }
+      
       .rodape-legal {
         position: fixed;
         bottom: 0; left: 0; right: 0;
         background: #fff;
         padding: 3px 10mm 6mm;
         margin-top: 0;
+        z-index: 1000;
       }
+      
       .conteudo {
         padding: 0 10mm;
       }
@@ -238,6 +258,7 @@
 
 <div class="folha">
 
+  <!-- CABEÇALHO REAL (FIXO) -->
   <div class="cabecalho">
     <div class="cab-esq">
       <img src="DANMO.png" alt="Danmo" />
@@ -263,96 +284,126 @@
     </div>
   </div>
 
-  <div class="conteudo">
+  <!-- TABELA DE LAYOUT PARA EMPURRAR O CONTEÚDO EM TODAS AS PÁGINAS -->
+  <table class="tabela-layout-impressao">
+    <thead>
+      <tr>
+        <td>
+          <!-- Este bloco repete no topo de CADA página impressa simulando o espaço do cabeçalho -->
+          <div class="print-header-space"></div>
+        </td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          
+          <!-- TODO O CONTEÚDO VEM AQUI PARA DENTRO -->
+          <div class="conteudo">
 
-    <div class="painel">
-      <div class="info-block">
-        <div class="info-block-title">Identificação</div>
-        <div class="info-row"><div class="info-key">Cliente</div><div class="info-val" id="p-cliente">CdM</div></div>
-        <div class="info-row"><div class="info-key">Equipamento</div><div class="info-val" id="p-equipamento">—</div></div>
-        <div class="info-row"><div class="info-key">Sector</div><div class="info-val" id="p-sector">—</div></div>
-        <div class="info-row"><div class="info-key">Conta Horas</div><div class="info-val" id="p-conta-horas"></div></div>
-        <div class="info-row"><div class="info-key">Abertura</div><div class="info-val" id="p-data-abertura">—</div></div>
-        <div class="info-row"><div class="info-key">Colaborador</div><div class="info-val" id="p-aberto-por">—</div></div>
-      </div>
+            <div class="painel">
+              <div class="info-block">
+                <div class="info-block-title">Identificação</div>
+                <div class="info-row"><div class="info-key">Cliente</div><div class="info-val" id="p-cliente">CdM</div></div>
+                <div class="info-row"><div class="info-key">Equipamento</div><div class="info-val" id="p-equipamento">—</div></div>
+                <div class="info-row"><div class="info-key">Sector</div><div class="info-val" id="p-sector">—</div></div>
+                <div class="info-row"><div class="info-key">Conta Horas</div><div class="info-val" id="p-conta-horas"></div></div>
+                <div class="info-row"><div class="info-key">Abertura</div><div class="info-val" id="p-data-abertura">—</div></div>
+                <div class="info-row"><div class="info-key">Colaborador</div><div class="info-val" id="p-aberto-por">—</div></div>
+              </div>
 
-      <div class="info-block">
-        <div class="info-block-title">Tipo de Intervenção</div>
-        <div class="cb-panel">
-          <div class="cb-grid">
-            <div class="cb-item"><span class="cb" id="cb-ig"></span>Inspeção Geral</div>
-            <div class="cb-item"><span class="cb" id="cb-rm"></span>Rep. Sis. Mecânico</div>
-            <div class="cb-item"><span class="cb" id="cb-rp"></span>Reparação Pneus</div>
-            <div class="cb-item"><span class="cb" id="cb-rh"></span>Rep. Sis. Hidráulico</div>
-            <div class="cb-item"><span class="cb" id="cb-lb"></span>Lubrificação</div>
-            <div class="cb-item"><span class="cb" id="cb-rel"></span>Rep. Sis. Elétrico</div>
-            <div class="cb-item"><span class="cb" id="cb-rv"></span>Revisão</div>
-            <div class="cb-item"><span class="cb" id="cb-re"></span>Rep. Estrutura</div>
-            <div class="cb-item"><span class="cb" id="cb-ot"></span>Outros</div>
+              <div class="info-block">
+                <div class="info-block-title">Tipo de Intervenção</div>
+                <div class="cb-panel">
+                  <div class="cb-grid">
+                    <div class="cb-item"><span class="cb" id="cb-ig"></span>Inspeção Geral</div>
+                    <div class="cb-item"><span class="cb" id="cb-rm"></span>Rep. Sis. Mecânico</div>
+                    <div class="cb-item"><span class="cb" id="cb-rp"></span>Reparação Pneus</div>
+                    <div class="cb-item"><span class="cb" id="cb-rh"></span>Rep. Sis. Hidráulico</div>
+                    <div class="cb-item"><span class="cb" id="cb-lb"></span>Lubrificação</div>
+                    <div class="cb-item"><span class="cb" id="cb-rel"></span>Rep. Sis. Elétrico</div>
+                    <div class="cb-item"><span class="cb" id="cb-rv"></span>Revisão</div>
+                    <div class="cb-item"><span class="cb" id="cb-re"></span>Rep. Estrutura</div>
+                    <div class="cb-item"><span class="cb" id="cb-ot"></span>Outros</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="diag-box">
+              <div class="diag-lbl">Diagnóstico / Motivo de Entrada</div>
+              <div class="diag-txt" id="p-diagnostico">—</div>
+            </div>
+
+            <div class="funcoes-bar">
+              <div class="cb-item"><span class="cb" id="cb-mec"></span>Mecânico</div>
+              <div class="cb-item"><span class="cb" id="cb-ele"></span>Eletricista</div>
+              <div class="cb-item"><span class="cb" id="cb-lub"></span>Lubrificador</div>
+              <div class="cb-item"><span class="cb" id="cb-piq"></span>Piquete</div>
+              <div class="cb-item"><span class="cb" id="cb-pne"></span>Pneumático</div>
+              <div class="cb-item"><span class="cb" id="cb-ser"></span>Serralheiro</div>
+              <div class="cb-item"><span class="cb" id="cb-tor"></span>Torneiro</div>
+              <div class="cb-item"><span class="cb" id="cb-out"></span>Outro</div>
+            </div>
+
+            <table class="tabela-obra">
+              <caption>Descrição da Mão de Obra</caption>
+              <thead>
+                <tr>
+                  <th class="col-desc">Descrição do Trabalho</th>
+                  <th class="col-nome">Técnico</th>
+                  <th class="col-hora">Hora (Início — Fim)</th>
+                  <th class="col-total">Tempo Total</th>
+                  <th class="col-nr">Nº</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-obra"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" style="text-align:right">Tempo Total Mão de Obra</td>
+                  <td style="text-align:center" id="p-total-horas"></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <table class="tabela-pecas">
+              <caption>Peças Aplicadas</caption>
+              <thead>
+                <tr>
+                  <th class="col-pp">Peça / Material</th>
+                  <th class="col-dp">Data</th>
+                  <th class="col-qp">Qtd</th>
+                  <th class="col-cp">Aplicado por</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-pecas"></tbody>
+            </table>
+
+           <div class="assinaturas-wrap">
+              <div class="ass-box"><div class="ass-linha" id="ass-abertura-nome"></div><div class="ass-cargo">Responsável Abertura</div><div class="ass-data" id="ass-abertura-data">Data: ___/___/_____</div></div>
+              <div class="ass-box"><div class="ass-linha" id="ass-supervisor-nome"></div><div class="ass-cargo">Supervisor</div><div class="ass-data" id="ass-supervisor-data">Data: ___/___/_____</div></div>
+              <div class="ass-box"><div class="ass-linha" id="ass-chefe-nome"></div><div class="ass-cargo">Chefe da Oficina</div><div class="ass-data" id="ass-chefe-data">Data: ___/___/_____</div></div>
+              <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Cliente (CdM)</div><div class="ass-data">Data: ___/___/_____</div></div>
+            </div>
+
           </div>
-        </div>
-      </div>
-    </div>
+          <!-- FIM DO CONTEÚDO -->
 
-    <div class="diag-box">
-      <div class="diag-lbl">Diagnóstico / Motivo de Entrada</div>
-      <div class="diag-txt" id="p-diagnostico">—</div>
-    </div>
+        </td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>
+          <!-- Este bloco repete no fundo de CADA página impressa simulando o espaço do rodapé -->
+          <div class="print-footer-space"></div>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
 
-    <div class="funcoes-bar">
-      <div class="cb-item"><span class="cb" id="cb-mec"></span>Mecânico</div>
-      <div class="cb-item"><span class="cb" id="cb-ele"></span>Eletricista</div>
-      <div class="cb-item"><span class="cb" id="cb-lub"></span>Lubrificador</div>
-      <div class="cb-item"><span class="cb" id="cb-piq"></span>Piquete</div>
-      <div class="cb-item"><span class="cb" id="cb-pne"></span>Pneumático</div>
-      <div class="cb-item"><span class="cb" id="cb-ser"></span>Serralheiro</div>
-      <div class="cb-item"><span class="cb" id="cb-tor"></span>Torneiro</div>
-      <div class="cb-item"><span class="cb" id="cb-out"></span>Outro</div>
-    </div>
-
-    <table class="tabela-obra">
-      <caption>Descrição da Mão de Obra</caption>
-      <thead>
-        <tr>
-          <th class="col-desc">Descrição do Trabalho</th>
-          <th class="col-nome">Técnico</th>
-          <th class="col-hora">Hora (Início — Fim)</th>
-          <th class="col-total">Tempo Total</th>
-          <th class="col-nr">Nº</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-obra"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3" style="text-align:right">Tempo Total Mão de Obra</td>
-          <td style="text-align:center" id="p-total-horas"></td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <table class="tabela-pecas">
-      <caption>Peças Aplicadas</caption>
-      <thead>
-        <tr>
-          <th class="col-pp">Peça / Material</th>
-          <th class="col-dp">Data</th>
-          <th class="col-qp">Qtd</th>
-          <th class="col-cp">Aplicado por</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-pecas"></tbody>
-    </table>
-
-   <div class="assinaturas-wrap">
-      <div class="ass-box"><div class="ass-linha" id="ass-abertura-nome"></div><div class="ass-cargo">Responsável Abertura</div><div class="ass-data" id="ass-abertura-data">Data: ___/___/_____</div></div>
-      <div class="ass-box"><div class="ass-linha" id="ass-supervisor-nome"></div><div class="ass-cargo">Supervisor</div><div class="ass-data" id="ass-supervisor-data">Data: ___/___/_____</div></div>
-      <div class="ass-box"><div class="ass-linha" id="ass-chefe-nome"></div><div class="ass-cargo">Chefe da Oficina</div><div class="ass-data" id="ass-chefe-data">Data: ___/___/_____</div></div>
-      <div class="ass-box"><div class="ass-linha"></div><div class="ass-cargo">Cliente (CdM)</div><div class="ass-data">Data: ___/___/_____</div></div>
-    </div>
-
-  </div>
-
+  <!-- RODAPÉ REAL (FIXO) -->
   <div class="rodape-legal">
     <div class="rodape-texto">
       Código: DAN_ADO_FR_023_REV03_06.06.25<br/>
@@ -394,12 +445,14 @@
     return mm >= 30 ? hh + 1 : hh;
   }
 
+  // NOVA LÓGICA DE MARGENS: Mede o cabeçalho e define a altura dos placeholders da tabela!
   function ajustarMargensImpressao() {
     const cab = document.querySelector('.cabecalho');
     const rod = document.querySelector('.rodape-legal');
     if (!cab || !rod) return;
-    const alturaCab = cab.offsetHeight + 4; // +4px de folga
-    const alturaRod = rod.offsetHeight + 4;
+    
+    const alturaCab = cab.offsetHeight + 10; // +10px de folga extra
+    const alturaRod = rod.offsetHeight + 10;
 
     let estilo = document.getElementById('_margem-dinamica');
     if (!estilo) {
@@ -407,7 +460,14 @@
       estilo.id = '_margem-dinamica';
       document.head.appendChild(estilo);
     }
-    estilo.textContent = `@media print {      .conteudo { margin-top: ${alturaCab}px !important; margin-bottom: ${alturaRod}px !important; }    }`;
+    
+    // Injeta a altura medida nos thead e tfoot da nossa tabela mágica
+    estilo.textContent = `
+      @media print {      
+        .print-header-space { height: ${alturaCab}px !important; }
+        .print-footer-space { height: ${alturaRod}px !important; }
+      }
+    `;
   }
 
   window.addEventListener('beforeprint', ajustarMargensImpressao);
@@ -486,7 +546,6 @@
     }
     document.getElementById('p-total-horas').textContent = totalHoras > 0 ? totalHoras+'h' : '';
 
-    // ── Assinaturas automáticas a partir do histórico de workflow ──
     const statusLog = await db.query('os_status_log', `select=*&os_id=eq.${osId}&order=data_mudanca.asc`);
 
     function preencherAssinatura(statusAlvo, idNome, idData) {
