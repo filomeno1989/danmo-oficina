@@ -198,38 +198,31 @@
     .rodape-logo img { height: 22px; }
 
     /* ══════════════════════════════
-       PRINT — só cabeçalho de logos e rodapé legal repetem;
-       todo o resto flui naturalmente pelo documento.
+        PRINT
     ══════════════════════════════ */
     @media print {
       body { background: #fff; }
       .btn-bar { display: none !important; }
       .folha { width: 100%; margin: 0; box-shadow: none; padding: 0; }
 
-      /* A margem da página reserva espaço para o cabeçalho/rodapé em TODAS as páginas */
-      @page { size: A4; margin: 34mm 10mm 22mm 10mm; }
+      @page { size: A4; margin: 0; }
 
       .cabecalho {
         position: fixed;
-        top: -26mm;      /* entra na margem reservada do topo */
-        left: 0; right: 0;
+        top: 0; left: 0; right: 0;
         background: #fff;
-        padding: 0 0 4px;
+        padding: 8mm 10mm 4px;
         margin-bottom: 0;
       }
       .rodape-legal {
         position: fixed;
-        bottom: -16mm;   /* entra na margem reservada do fundo */
-        left: 0; right: 0;
+        bottom: 0; left: 0; right: 0;
         background: #fff;
-        padding: 3px 0 0;
+        padding: 3px 10mm 6mm;
         margin-top: 0;
       }
-
-      /* Já não precisa de margin-top/bottom manual — a margem da página trata disso */
       .conteudo {
-        margin: 0;
-        padding: 0;
+        padding: 0 10mm;
       }
 
       .tabela-obra tbody tr { page-break-inside: avoid; }
@@ -401,6 +394,24 @@
     return mm >= 30 ? hh + 1 : hh;
   }
 
+  function ajustarMargensImpressao() {
+    const cab = document.querySelector('.cabecalho');
+    const rod = document.querySelector('.rodape-legal');
+    if (!cab || !rod) return;
+    const alturaCab = cab.offsetHeight + 4; // +4px de folga
+    const alturaRod = rod.offsetHeight + 4;
+
+    let estilo = document.getElementById('_margem-dinamica');
+    if (!estilo) {
+      estilo = document.createElement('style');
+      estilo.id = '_margem-dinamica';
+      document.head.appendChild(estilo);
+    }
+    estilo.textContent = `@media print {      .conteudo { margin-top: ${alturaCab}px !important; margin-bottom: ${alturaRod}px !important; }    }`;
+  }
+
+  window.addEventListener('beforeprint', ajustarMargensImpressao);
+
   async function carregar() {
     const osList = await db.query('ordens_servico', `select=*&id=eq.${osId}`);
     const os = osList[0];
@@ -504,7 +515,7 @@
     }
   }
 
-  carregar();
+  carregar().then(() => setTimeout(ajustarMargensImpressao, 150));
 </script>
 </body>
 </html>
